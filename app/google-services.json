@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "848921503124",
+    "firebase_url": "https://fbappvs2019-default-rtdb.firebaseio.com",
+    "project_id": "fbappvs2019",
+    "storage_bucket": "fbappvs2019.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848921503124:android:f3deba074b87f1c7c8db81",
+        "android_client_info": {
+          "package_name": "com.lmar.appvs2019"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmMi84MlawsGW7TCuBAwEzvNPu1Kb1Kvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848921503124:android:fa5f0ffe5e50ef4cc8db81",
+        "android_client_info": {
+          "package_name": "com.lmar.tictactoe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmMi84MlawsGW7TCuBAwEzvNPu1Kb1Kvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

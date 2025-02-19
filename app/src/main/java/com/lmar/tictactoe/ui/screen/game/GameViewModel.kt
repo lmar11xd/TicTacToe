@@ -1,62 +1,97 @@
 package com.lmar.tictactoe.ui.screen.game
 
+import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.database
+import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerEnum
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import java.util.UUID
 
 class GameViewModel : ViewModel() {
-    private val _gameState = MutableStateFlow<GameState>(GameState.Start)
-    val gameState: StateFlow<GameState> = _gameState
 
-    private fun checkWinner(board: List<List<String>>): String? {
-        for (i in 0..2) {
-            if (board[i][0] == board[i][1] && board[i][1] == board[i][2] && board[i][0].isNotEmpty()) {
-                return board[i][0]
-            }
-            if (board[0][i] == board[1][i] && board[1][i] == board[2][i] && board[0][i].isNotEmpty()) {
-                return board[0][i]
-            }
-        }
-        if (board[0][0] == board[1][1] && board[1][1] == board[2][2] && board[0][0].isNotEmpty()) {
-            return board[0][0]
-        }
-        if (board[0][2] == board[1][1] && board[1][1] == board[2][0] && board[0][2].isNotEmpty()) {
-            return board[0][2]
-        }
-        return null
+    private var database: DatabaseReference = Firebase.database.getReference("games/tictactoe")
+
+    private val _gameState = MutableLiveData<GameState>()
+    val gameState: LiveData<GameState> = _gameState
+
+    init {
+        Log.d("Firebase", "Database Reference: $database") // Verifica que no sea null
+        createNewGame()
     }
 
-    fun startGame() {
-        _gameState.value = GameState.Playing(
-            board = List(3) { MutableList(3) { "" } },
-            currentPlayer = PlayerEnum.X,
-            moves = 0
-        )
+    fun createNewGame() {
+        val gameId = UUID.randomUUID().toString()
+        val newGame = GameState(gameId = gameId)
+        //database.child("boards").child(gameId).setValue(newGame)
+
+        Log.e("Firebase", "Creando Juego: $gameId")
+
+        database.child("boards").child(gameId).setValue(newGame)
+            .addOnSuccessListener {
+                Log.e("Firebase", "Juego creado con éxito: $gameId")
+                listenForUpdates(gameId) // Solo escuchar si se creó con éxito
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firebase", "Error al crear el juego", e)
+            }
     }
 
-    fun makeMove(row: Int, col: Int) {
-        val currentGameState = _gameState.value
-        if (currentGameState is GameState.Playing) {
-            val board = currentGameState.board.map { it.toMutableList() }
-            if (board[row][col].isEmpty()) {
-                board[row][col] = currentGameState.currentPlayer.name
-                val winner = checkWinner(board)
-                val moves = currentGameState.moves + 1
-
-                _gameState.value = when {
-                    winner != null -> GameState.Finished("$winner ganó!")
-                    moves == 9 -> GameState.Finished("¡Empate!")
-                    else -> {
-                        val nextPlayer = if (currentGameState.currentPlayer == PlayerEnum.X) PlayerEnum.O else PlayerEnum.X
-                        GameState.Playing(board, nextPlayer, moves)
-                    }
+    private fun listenForUpdates(gameId: String) {
+        database.child("boards").child(gameId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.getValue(GameState::class.java)?.let {
+                    Log.e("Firebase", "$it")
+                    _gameState.value = it
                 }
             }
-        }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("Firebase", "Error: ${error.message}")
+            }
+        })
     }
 
-    fun resetGame() {
-        _gameState.value = GameState.Start
+    fun makeMove(index: Int) {
+        val currentGame = _gameState.value ?: return
+        if (currentGame.board[index].isNotEmpty() || currentGame.winner.isNotEmpty()) return
+
+        val newBoard = currentGame.board.toMutableList()
+        newBoard[index] = currentGame.currentPlayer.name
+        val nextPlayer = if (currentGame.currentPlayer.name == PlayerEnum.X.name) PlayerEnum.O else PlayerEnum.X
+
+        val winner = checkWinner(newBoard)
+        val isFinished = winner.isNotEmpty() // Si hay ganador o empate, el juego termina
+
+        val updatedGame = currentGame.copy(
+            board = newBoard,
+            currentPlayer = if (isFinished) currentGame.currentPlayer else nextPlayer,
+            winner = winner,
+            gameStatus = if (isFinished) GameStatusEnum.FINISHED else GameStatusEnum.IN_PROGRESS,
+            updatedAt = System.currentTimeMillis()
+        )
+
+        database.child("boards").child(currentGame.gameId).setValue(updatedGame)
+    }
+
+    private fun checkWinner(board: List<String>): String {
+        val winningPositions = listOf(
+            listOf(0, 1, 2), listOf(3, 4, 5), listOf(6, 7, 8),
+            listOf(0, 3, 6), listOf(1, 4, 7), listOf(2, 5, 8),
+            listOf(0, 4, 8), listOf(2, 4, 6)
+        )
+        for (positions in winningPositions) {
+            val (a, b, c) = positions
+            if (board[a].isNotEmpty() && board[a] == board[b] && board[b] == board[c]) {
+                return board[a]
+            }
+        }
+        return if (board.all { it.isNotEmpty() }) "Draw" else ""
     }
 }

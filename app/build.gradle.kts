@@ -1,9 +1,20 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+
+    //Firebase
+    id("com.google.gms.google-services")
 }
 
 android {
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("C:\\Users\\lmar11\\Documents\\keystore\\lmar-dev.jks")
+            keyAlias = "lmar-dev"
+            keyPassword = "lmarkey2024"
+            storePassword = "lmarkey2024"
+        }
+    }
     namespace = "com.lmar.tictactoe"
     compileSdk = 35
 
@@ -61,6 +72,12 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
+
+    //Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.database)
+    implementation(libs.androidx.runtime.livedata)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

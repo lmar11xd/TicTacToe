@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.FirebaseApp
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
@@ -20,6 +21,9 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //FirebaseApp.initializeApp(this)
+
         enableEdgeToEdge()
         setContent {
             TicTacToeTheme {
