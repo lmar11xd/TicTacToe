@@ -11,7 +11,8 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
 import com.lmar.tictactoe.core.enums.GameStatusEnum
-import com.lmar.tictactoe.core.enums.PlayerEnum
+import com.lmar.tictactoe.core.state.GameState
+import com.lmar.tictactoe.core.util.generarCodigoUnico
 import java.util.UUID
 
 class GameViewModel : ViewModel() {
@@ -28,8 +29,8 @@ class GameViewModel : ViewModel() {
 
     fun createNewGame() {
         val gameId = UUID.randomUUID().toString()
-        val newGame = GameState(gameId = gameId)
-        //database.child("boards").child(gameId).setValue(newGame)
+        val codigo = generarCodigoUnico() //Generar código para unirse a la partida
+        val newGame = GameState(gameId = gameId, codigo)
 
         Log.e("Firebase", "Creando Juego: $gameId")
 
@@ -63,15 +64,19 @@ class GameViewModel : ViewModel() {
         if (currentGame.board[index].isNotEmpty() || currentGame.winner.isNotEmpty()) return
 
         val newBoard = currentGame.board.toMutableList()
-        newBoard[index] = currentGame.currentPlayer.name
-        val nextPlayer = if (currentGame.currentPlayer.name == PlayerEnum.X.name) PlayerEnum.O else PlayerEnum.X
+        newBoard[index] = currentGame.currentPlayerType.name
+        val nextPlayerType =
+            if (currentGame.currentPlayerType.name == currentGame.player1.playerType.name)
+                currentGame.player2.playerType
+            else
+                currentGame.player1.playerType
 
         val winner = checkWinner(newBoard)
         val isFinished = winner.isNotEmpty() // Si hay ganador o empate, el juego termina
 
         val updatedGame = currentGame.copy(
             board = newBoard,
-            currentPlayer = if (isFinished) currentGame.currentPlayer else nextPlayer,
+            currentPlayerType = if (isFinished) currentGame.currentPlayerType else nextPlayerType,
             winner = winner,
             gameStatus = if (isFinished) GameStatusEnum.FINISHED else GameStatusEnum.IN_PROGRESS,
             updatedAt = System.currentTimeMillis()

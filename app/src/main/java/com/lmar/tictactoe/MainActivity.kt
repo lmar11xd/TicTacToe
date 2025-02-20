@@ -11,10 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.FirebaseApp
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
+import com.lmar.tictactoe.ui.screen.room.MultiGameScreen
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 
 class MainActivity : ComponentActivity() {
@@ -42,6 +42,10 @@ class MainActivity : ComponentActivity() {
 
                         composable(route = ScreenRoutes.GameScreen.route) {
                             GameScreen(navController)
+                        }
+
+                        composable(route = ScreenRoutes.MultiGameScreen.route) {
+                            MultiGameScreen(navController)
                         }
                     }
                 }
