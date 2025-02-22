@@ -17,23 +17,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,9 +40,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
+import com.lmar.tictactoe.ui.component.CustomAppBar
 import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.ShadowText
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
@@ -60,34 +55,20 @@ import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 @Composable
 fun GameScreen(
     navController: NavController,
-    viewModel: GameViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: GameViewModel = viewModel()
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val gameState by viewModel.gameState.observeAsState()
+    val roomState by viewModel.roomState.observeAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                title = { Text("Tres en Raya", color = MaterialTheme.colorScheme.primary) },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            navController.popBackStack()
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+            CustomAppBar(
+                "Tres en Raya",
+                onBackAction = {
+                    navController.popBackStack()
                 },
-                actions = {
-                },
-                scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
-                    rememberTopAppBarState()
-                )
+                state = rememberTopAppBarState()
             )
         },
         snackbarHost = {
@@ -107,15 +88,6 @@ fun GameScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
-                TopAppBar(
-                    title = {  },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-                        }
-                    }
-                )
-
                 Column(
                     modifier = Modifier.padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -130,28 +102,58 @@ fun GameScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         //Player 1
-                        GlowingCard(
-                            modifier = Modifier.width(70.dp).height(60.dp),
-                            glowingColor = if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name) PlayerTypeEnum.X.color else MaterialTheme.colorScheme.primary,
-                            containerColor = if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name) PlayerTypeEnum.X.color else MaterialTheme.colorScheme.primary,
-                            cornerRadius = 8.dp,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(
-                                modifier = Modifier.align(Alignment.BottomCenter)
+                            GlowingCard(
+                                modifier = Modifier
+                                    .width(70.dp)
+                                    .height(60.dp),
+                                glowingColor =
+                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name)
+                                    PlayerTypeEnum.X.color
+                                else MaterialTheme.colorScheme.primary,
+                                containerColor =
+                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name)
+                                    PlayerTypeEnum.X.color
+                                else MaterialTheme.colorScheme.primary,
+                                cornerRadius = 8.dp,
                             ) {
-                                ShadowText(
-                                    text = PlayerTypeEnum.X.name,
-                                    textColor = Color.White,
-                                    shadowColor = Color.White,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                )
-                                Text("Jugador 1", fontSize = 8.sp, color = Color.White)
+                                Column(
+                                    modifier = Modifier.align(Alignment.BottomCenter)
+                                ) {
+                                    ShadowText(
+                                        text = PlayerTypeEnum.X.name,
+                                        textColor = Color.White,
+                                        shadowColor = Color.White,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                    )
+                                    Text("Jugador 1", fontSize = 8.sp, color = Color.White)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.size(10.dp))
+
+                            GlowingCard(
+                                glowingColor =
+                                if (gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
+                                    PlayerTypeEnum.X.color
+                                else Color.Gray,
+                                glowingRadius = 10.dp,
+                                containerColor =
+                                if (gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
+                                    PlayerTypeEnum.X.color.copy(alpha = 0.4f)
+                                else Color.Gray.copy(alpha = 0.4f)
+                            ) {
+                                Box(modifier = Modifier.size(10.dp))
                             }
                         }
 
                         //VS
                         GlowingCard(
-                            modifier = Modifier.size(70.dp).padding(10.dp),
+                            modifier = Modifier
+                                .size(70.dp)
+                                .padding(10.dp),
                             glowingColor = MaterialTheme.colorScheme.tertiary,
                             containerColor = MaterialTheme.colorScheme.tertiary,
                             cornerRadius = Int.MAX_VALUE.dp,
@@ -166,24 +168,52 @@ fun GameScreen(
                         }
 
                         //Player 2
-                        GlowingCard(
-                            modifier = Modifier.width(70.dp).height(60.dp),
-                            glowingColor = if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name) PlayerTypeEnum.O.color else MaterialTheme.colorScheme.primary,
-                            containerColor = if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name) PlayerTypeEnum.O.color else MaterialTheme.colorScheme.primary,
-                            cornerRadius = 8.dp,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(
-                                modifier = Modifier.align(Alignment.BottomCenter)
+                            GlowingCard(
+                                modifier = Modifier
+                                    .width(70.dp)
+                                    .height(60.dp),
+                                glowingColor =
+                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name)
+                                    PlayerTypeEnum.O.color
+                                else MaterialTheme.colorScheme.primary,
+                                containerColor =
+                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name)
+                                    PlayerTypeEnum.O.color
+                                else MaterialTheme.colorScheme.primary,
+                                cornerRadius = 8.dp,
                             ) {
-                                ShadowText(
-                                    text = PlayerTypeEnum.O.name,
-                                    textColor = Color.White,
-                                    shadowColor = Color.White,
-                                    modifier = Modifier
-                                        .align(Alignment.CenterHorizontally)
-                                )
+                                Column(
+                                    modifier = Modifier.align(Alignment.BottomCenter)
+                                ) {
+                                    ShadowText(
+                                        text = PlayerTypeEnum.O.name,
+                                        textColor = Color.White,
+                                        shadowColor = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.CenterHorizontally)
+                                    )
 
-                                Text("Jugador 2", fontSize = 8.sp, color = Color.White)
+                                    Text("Jugador 2", fontSize = 8.sp, color = Color.White)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.size(10.dp))
+
+                            GlowingCard(
+                                glowingColor =
+                                if (gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
+                                    PlayerTypeEnum.O.color
+                                else Color.Gray,
+                                glowingRadius = 10.dp,
+                                containerColor =
+                                if (gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
+                                    PlayerTypeEnum.O.color.copy(alpha = 0.4f)
+                                else Color.Gray.copy(alpha = 0.4f)
+                            ) {
+                                Box(modifier = Modifier.size(10.dp))
                             }
                         }
                     }
@@ -199,8 +229,11 @@ fun GameScreen(
                     ) {
                         Column(
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
-                                .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(start = 20.dp, end = 20.dp, top = 20.dp)
                         ) {
                             for (row in 0..2) {
                                 Row {
@@ -210,9 +243,17 @@ fun GameScreen(
                                             Box(
                                                 modifier = Modifier
                                                     .size(100.dp)
-                                                    .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                                    .border(
+                                                        1.dp,
+                                                        Color.White.copy(alpha = 0.5f),
+                                                        RoundedCornerShape(8.dp)
+                                                    )
                                                     .clip(RoundedCornerShape(8.dp))
-                                                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f))
+                                                    .background(
+                                                        MaterialTheme.colorScheme.tertiary.copy(
+                                                            alpha = 0.2f
+                                                        )
+                                                    )
                                                     .clickable(enabled = gameState?.winner.isNullOrEmpty()) {
                                                         viewModel.makeMove(index)
                                                     }
@@ -236,15 +277,13 @@ fun GameScreen(
                                 }
                             }
 
-                            gameState?.codigo?.let {
-                                Text(
-                                    text = it,
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(0.5f),
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                            }
+                            Text(
+                                text = roomState?.roomCode ?: "",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(0.5f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.align(Alignment.End)
+                            )
                         }
                     }
 
@@ -259,7 +298,7 @@ fun GameScreen(
                             )
 
                             Button(
-                                onClick = { viewModel.createNewGame() },
+                                onClick = { viewModel.onNewGame() },
                                 colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
                                 modifier = Modifier.padding(top = 12.dp)
                             ) {
@@ -275,7 +314,7 @@ fun GameScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun GameScreenPreview() {
+private fun GameScreenPreview() {
     TicTacToeTheme {
         GameScreen(rememberNavController())
     }

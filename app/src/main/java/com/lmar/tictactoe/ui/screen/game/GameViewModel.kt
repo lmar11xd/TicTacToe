@@ -1,8 +1,11 @@
 package com.lmar.tictactoe.ui.screen.game
 
+import android.os.Build
 import android.util.Log
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.database.DataSnapshot
@@ -10,53 +13,157 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
+import com.lmar.tictactoe.core.Constants.BOARDS_REFERENCE
+import com.lmar.tictactoe.core.Constants.DATABASE_REFERENCE
+import com.lmar.tictactoe.core.Constants.ROOMS_REFERENCE
 import com.lmar.tictactoe.core.enums.GameStatusEnum
+import com.lmar.tictactoe.core.enums.GameTypeEnum
+import com.lmar.tictactoe.core.enums.PlayerStatusEnum
+import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.core.state.GameState
-import com.lmar.tictactoe.core.util.generarCodigoUnico
+import com.lmar.tictactoe.core.state.RoomState
 import java.util.UUID
 
-class GameViewModel : ViewModel() {
+class GameViewModel(
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
-    private var database: DatabaseReference = Firebase.database.getReference("games/tictactoe")
+    companion object {
+        private const val TAG = "GameViewModel"
+    }
+
+    private var database: DatabaseReference = Firebase.database.getReference(DATABASE_REFERENCE)
+
+    private val _roomId = MutableLiveData(savedStateHandle.get<String?>("roomId"))
+    val roomId: LiveData<String?> = _roomId
+
+    private val _playerType = MutableLiveData(savedStateHandle.get<String?>("playerType"))
+    val playerType: LiveData<String?> = _playerType
 
     private val _gameState = MutableLiveData<GameState>()
     val gameState: LiveData<GameState> = _gameState
 
-    init {
-        Log.d("Firebase", "Database Reference: $database") // Verifica que no sea null
-        createNewGame()
+    private val _roomState = MutableLiveData<RoomState>()
+    val roomState: LiveData<RoomState> = _roomState
+
+    private val _roomReady = MediatorLiveData<Pair<String, String>>().apply {
+        addSource(_roomId) { id ->
+            val type = _playerType.value
+            if (!id.isNullOrEmpty() && !type.isNullOrEmpty()) {
+                val newValue = Pair(id, type)
+                if (value != newValue) value = newValue
+            }
+        }
+        addSource(_playerType) { type ->
+            val id = _roomId.value
+            if (!id.isNullOrEmpty() && !type.isNullOrEmpty()) {
+                val newValue = Pair(id, type)
+                if (value != newValue) value = newValue
+            }
+        }
     }
 
-    fun createNewGame() {
+    private val deviceInfo: String = "${Build.MANUFACTURER} ${Build.MODEL}"
+    private val androidVersion: String = Build.VERSION.RELEASE
+
+    init {
+        _roomReady.observeForever { (roomId, playerType) ->
+            Log.d(TAG, "RoomId: $roomId, PlayerType: $playerType")
+
+            if (roomId == "0") {
+                createNewGame()
+            } else {
+                getRoomById(roomId) {
+                    if (playerType == PlayerTypeEnum.X.name) { // Player 1 (Creador)
+                        Log.d(TAG, "Jugador X va a crear la partida")
+                        createNewGameMultiPlayer(roomId)
+                    } else { // Player 2 (Se une)
+                        Log.d(TAG, "Jugador O va a unirse a la partida")
+                        getGameByRoomId(roomId) { gameId ->
+                            listenForUpdates(gameId)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateStatusPlayer2(gameState: GameState) {
+        Log.d(TAG, "Actualizando status del Jugador O ${gameState.gameId}")
+        val currentGame = gameState
+        currentGame.player2.playerStatus = PlayerStatusEnum.ONLINE
+
+        val updatedGame = currentGame.copy(
+            player2 = currentGame.player2,
+            updatedAt = System.currentTimeMillis(),
+            modificationUser = "$deviceInfo/$androidVersion/updateStatusPlayer2"
+        )
+
+        database.child(BOARDS_REFERENCE).child(currentGame.gameId).setValue(updatedGame)
+    }
+
+    private fun createNewGame() {
         val gameId = UUID.randomUUID().toString()
-        val codigo = generarCodigoUnico() //Generar código para unirse a la partida
-        val newGame = GameState(gameId = gameId, codigo)
+        val newGame = GameState(gameId = gameId)
 
-        Log.e("Firebase", "Creando Juego: $gameId")
+        newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGame"
 
-        database.child("boards").child(gameId).setValue(newGame)
+        Log.d(TAG, "Creando Juego: $gameId")
+
+        database.child(BOARDS_REFERENCE)
+            .child(gameId)
+            .setValue(newGame)
             .addOnSuccessListener {
-                Log.e("Firebase", "Juego creado con éxito: $gameId")
+                Log.d(TAG, "Juego creado con éxito: $gameId")
                 listenForUpdates(gameId) // Solo escuchar si se creó con éxito
             }
             .addOnFailureListener { e ->
-                Log.e("Firebase", "Error al crear el juego", e)
+                Log.e(TAG, "Error al crear el juego $gameId", e)
             }
     }
 
-    private fun listenForUpdates(gameId: String) {
-        database.child("boards").child(gameId).addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.getValue(GameState::class.java)?.let {
-                    Log.e("Firebase", "$it")
-                    _gameState.value = it
-                }
-            }
+    private fun createNewGameMultiPlayer(roomId: String) {
+        val gameId = UUID.randomUUID().toString()
+        val newGame = GameState(gameId = gameId, roomId = roomId, GameTypeEnum.MULTIPLAYER)
+        newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGameMultiPlayer"
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("Firebase", "Error: ${error.message}")
+        Log.d(TAG, "Creando Juego: $gameId")
+
+        database.child(BOARDS_REFERENCE)
+            .child(gameId)
+            .setValue(newGame)
+            .addOnSuccessListener {
+                Log.d(TAG, "Juego creado con éxito: $gameId")
+
+                // Solo escuchar si se creó con éxito
+                listenForUpdates(gameId)
             }
-        })
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error al crear el juego $gameId", e)
+            }
+    }
+
+    fun onNewGame() {
+        if(roomId.value?.isEmpty() == true) {
+            createNewGame()
+        } else {
+            roomId.value?.let { createNewGameMultiPlayer(it) }
+        }
+    }
+
+    private fun listenForUpdates(gameId: String) {
+        database.child(BOARDS_REFERENCE).child(gameId)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    snapshot.getValue(GameState::class.java)?.let {
+                        _gameState.value = it
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "Error: ${error.message}")
+                }
+            })
     }
 
     fun makeMove(index: Int) {
@@ -79,10 +186,11 @@ class GameViewModel : ViewModel() {
             currentPlayerType = if (isFinished) currentGame.currentPlayerType else nextPlayerType,
             winner = winner,
             gameStatus = if (isFinished) GameStatusEnum.FINISHED else GameStatusEnum.IN_PROGRESS,
+            modificationUser = "$deviceInfo/$androidVersion/makeMove",
             updatedAt = System.currentTimeMillis()
         )
 
-        database.child("boards").child(currentGame.gameId).setValue(updatedGame)
+        database.child(BOARDS_REFERENCE).child(currentGame.gameId).setValue(updatedGame)
     }
 
     private fun checkWinner(board: List<String>): String {
@@ -98,5 +206,52 @@ class GameViewModel : ViewModel() {
             }
         }
         return if (board.all { it.isNotEmpty() }) "Draw" else ""
+    }
+
+    private fun getRoomById(roomId: String, onComplete: () -> Unit) {
+        database.child(ROOMS_REFERENCE).child(roomId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        snapshot.getValue(RoomState::class.java)?.let {
+                            _roomState.value = it
+                            Log.d(TAG,"Sala con ID ${it.roomId} encontrada")
+                            onComplete()
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "Error al obtener la sala: ${error.message}")
+                }
+            })
+    }
+
+    private fun getGameByRoomId(roomId: String, onComplete: (gameId: String) -> Unit) {
+        database.child(BOARDS_REFERENCE).orderByChild("roomId").equalTo(roomId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val gameSnapshot = snapshot.children.firstOrNull()
+                        Log.e(TAG, "Snapshot Game: $snapshot")
+                        if (gameSnapshot != null) {
+                            gameSnapshot.getValue(GameState::class.java)?.let {
+                                _gameState.value = it
+                                Log.e(TAG, "Game: $it")
+                                Log.d(TAG, "Partida con roomId $roomId encontrada")
+
+                                updateStatusPlayer2(it)
+                                Log.d(TAG, "Status del Jugador O actualizado ")
+
+                                onComplete(it.gameId)
+                            }
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "Error al obtener la sala: ${error.message}")
+                }
+            })
     }
 }

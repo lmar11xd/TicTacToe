@@ -8,21 +8,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
-import com.lmar.tictactoe.ui.screen.room.MultiGameScreen
+import com.lmar.tictactoe.ui.screen.room.RoomScreen
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        //FirebaseApp.initializeApp(this)
 
         enableEdgeToEdge()
         setContent {
@@ -40,12 +40,26 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(navController)
                         }
 
-                        composable(route = ScreenRoutes.GameScreen.route) {
-                            GameScreen(navController)
+                        composable(
+                            route = ScreenRoutes.GameScreen.route + "?roomId={roomId}&playerType={playerType}",
+                            arguments = listOf(
+                                navArgument("roomId") {
+                                    type = NavType.StringType
+                                    defaultValue = "0"
+                                },
+                                navArgument("playerType") {
+                                    type = NavType.StringType
+                                    defaultValue = "X" // Valor por defecto
+                                }
+                            )
+                        ){
+                            GameScreen(
+                                navController = navController
+                            )
                         }
 
-                        composable(route = ScreenRoutes.MultiGameScreen.route) {
-                            MultiGameScreen(navController)
+                        composable(route = ScreenRoutes.RoomScreen.route) {
+                            RoomScreen(navController)
                         }
                     }
                 }

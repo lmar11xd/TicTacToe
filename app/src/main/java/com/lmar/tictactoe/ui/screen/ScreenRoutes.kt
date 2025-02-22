@@ -1,7 +1,7 @@
 package com.lmar.tictactoe.ui.screen
 
 sealed class ScreenRoutes(val route: String) {
-    object HomeScreen: ScreenRoutes("home_screen")
-    object GameScreen: ScreenRoutes("game_screen")
-    object MultiGameScreen: ScreenRoutes("multigame_screen")
+    data object HomeScreen: ScreenRoutes("home_screen")
+    data object GameScreen: ScreenRoutes("game_screen")
+    data object RoomScreen: ScreenRoutes("room_screen")
 }

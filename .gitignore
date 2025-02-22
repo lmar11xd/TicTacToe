@@ -14,3 +14,11 @@
 .cxx
 local.properties
 google-services.json
+/app/release/baselineProfiles/0/app-release.dm
+/app/release/baselineProfiles/1/app-release.dm
+/.idea/appInsightsSettings.xml
+/app/src/main/res/values-v23/font_certs.xml
+/app/release/output-metadata.json
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/runConfigurations.xml
+/app/release/TicTacToe.apk
