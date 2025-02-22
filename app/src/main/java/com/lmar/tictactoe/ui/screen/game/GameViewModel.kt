@@ -76,10 +76,12 @@ class GameViewModel(
                 getRoomById(roomId) {
                     if (playerType == PlayerTypeEnum.X.name) { // Player 1 (Creador)
                         Log.d(TAG, "Jugador X va a crear la partida")
+                        listenForRoomUpdates(roomId)
                         createNewGameMultiPlayer(roomId)
                     } else { // Player 2 (Se une)
                         Log.d(TAG, "Jugador O va a unirse a la partida")
                         getGameByRoomId(roomId) { gameId ->
+                            listenForRoomUpdates(roomId)
                             listenForUpdates(gameId)
                         }
                     }
@@ -166,9 +168,29 @@ class GameViewModel(
             })
     }
 
+    private fun listenForRoomUpdates(gameId: String) {
+        database.child(ROOMS_REFERENCE).child(gameId)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    snapshot.getValue(RoomState::class.java)?.let {
+                        _roomState.value = it
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "Error: ${error.message}")
+                }
+            })
+    }
+
     fun makeMove(index: Int) {
         val currentGame = _gameState.value ?: return
         if (currentGame.board[index].isNotEmpty() || currentGame.winner.isNotEmpty()) return
+
+        if(playerType.value != currentGame.currentPlayerType.name) {
+            Log.e(TAG, "No es tu turno")
+            return
+        }
 
         val newBoard = currentGame.board.toMutableList()
         newBoard[index] = currentGame.currentPlayerType.name

@@ -45,6 +45,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
+import com.lmar.tictactoe.core.enums.RoomStatusEnum
 import com.lmar.tictactoe.ui.component.CustomAppBar
 import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.ShadowText
@@ -60,6 +61,7 @@ fun GameScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val gameState by viewModel.gameState.observeAsState()
     val roomState by viewModel.roomState.observeAsState()
+    val playerType by viewModel.playerType.observeAsState()
 
     Scaffold(
         topBar = {
@@ -93,6 +95,15 @@ fun GameScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(modifier = Modifier.height(100.dp))
+
+                    Text(
+                        "Eres el jugador $playerType - ${roomState?.roomStatus}",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+
+                    Spacer(modifier = Modifier.size(10.dp))
 
                     Row(
                         modifier = Modifier
@@ -128,7 +139,7 @@ fun GameScreen(
                                         shadowColor = Color.White,
                                         modifier = Modifier.align(Alignment.CenterHorizontally)
                                     )
-                                    Text("Jugador 1", fontSize = 8.sp, color = Color.White)
+                                    Text("Jugador X", fontSize = 8.sp, color = Color.White)
                                 }
                             }
 
@@ -196,7 +207,7 @@ fun GameScreen(
                                             .align(Alignment.CenterHorizontally)
                                     )
 
-                                    Text("Jugador 2", fontSize = 8.sp, color = Color.White)
+                                    Text("Jugador O", fontSize = 8.sp, color = Color.White)
                                 }
                             }
 
@@ -254,7 +265,11 @@ fun GameScreen(
                                                             alpha = 0.2f
                                                         )
                                                     )
-                                                    .clickable(enabled = gameState?.winner.isNullOrEmpty()) {
+                                                    .clickable(
+                                                        enabled = roomState?.roomStatus == RoomStatusEnum.COMPLETED
+                                                                //&& gameState?.currentPlayerType?.name == playerType
+                                                                && gameState?.winner.isNullOrEmpty()
+                                                    ) {
                                                         viewModel.makeMove(index)
                                                     }
                                                     .padding(16.dp),
