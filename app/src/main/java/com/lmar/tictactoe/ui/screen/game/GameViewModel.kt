@@ -35,7 +35,7 @@ class GameViewModel(
     private var database: DatabaseReference = Firebase.database.getReference(DATABASE_REFERENCE)
 
     private val _roomId = MutableLiveData(savedStateHandle.get<String?>("roomId"))
-    val roomId: LiveData<String?> = _roomId
+    private val roomId: LiveData<String?> = _roomId
 
     private val _playerType = MutableLiveData(savedStateHandle.get<String?>("playerType"))
     val playerType: LiveData<String?> = _playerType
