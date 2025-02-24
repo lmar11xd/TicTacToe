@@ -367,7 +367,7 @@ class GameViewModel(
 
     fun onMoveMade(index: Int) {
         viewModelScope.launch {
-            makeMove(index)  // Ahora se ejecuta dentro de una corrutina
+            makeMove(index)
         }
     }
 }
