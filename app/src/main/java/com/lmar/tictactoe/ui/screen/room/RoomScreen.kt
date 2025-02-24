@@ -1,7 +1,6 @@
 package com.lmar.tictactoe.ui.screen.room
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,7 +51,6 @@ fun RoomScreen(
     viewModel: RoomViewModel = viewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val roomState by viewModel.roomState.observeAsState()
 
     var code by remember { mutableStateOf("") }
     var validationMessage by remember { mutableStateOf("") }

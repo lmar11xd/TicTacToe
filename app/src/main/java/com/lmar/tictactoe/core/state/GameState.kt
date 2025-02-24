@@ -24,14 +24,7 @@ data class GameState(
 
     constructor(gameId: String) : this (
         gameId = gameId,
-        gameType = GameTypeEnum.SINGLE,
-        currentPlayerType = PlayerTypeEnum.entries.toTypedArray().random()
+        gameType = GameTypeEnum.SINGLE
     )
 
-    constructor(gameId: String, roomId: String, gameType: GameTypeEnum) : this (
-        gameId = gameId,
-        roomId = roomId,
-        gameType = gameType,
-        currentPlayerType = PlayerTypeEnum.entries.toTypedArray().random()
-    )
 }

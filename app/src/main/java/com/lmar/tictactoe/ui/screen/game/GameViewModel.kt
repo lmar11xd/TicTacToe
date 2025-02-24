@@ -7,6 +7,7 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -20,8 +21,12 @@ import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.GameTypeEnum
 import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
+import com.lmar.tictactoe.core.enums.RoomStatusEnum
 import com.lmar.tictactoe.core.state.GameState
 import com.lmar.tictactoe.core.state.RoomState
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 class GameViewModel(
@@ -66,6 +71,22 @@ class GameViewModel(
     private val deviceInfo: String = "${Build.MANUFACTURER} ${Build.MODEL}"
     private val androidVersion: String = Build.VERSION.RELEASE
 
+    private val _showDialogWinner = MutableLiveData(false)
+    val showDialogWinner: LiveData<Boolean> = _showDialogWinner
+
+    private val _showDialogDraw = MutableLiveData(false)
+    val showDialogDraw: LiveData<Boolean> = _showDialogDraw
+
+    private val _showDialogLoser = MutableLiveData(false)
+    val showDialogLoser: LiveData<Boolean> = _showDialogLoser
+
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    sealed class UiEvent {
+        data object SoundTap: UiEvent()
+    }
+
     init {
         _roomReady.observeForever { (roomId, playerType) ->
             Log.d(TAG, "RoomId: $roomId, PlayerType: $playerType")
@@ -95,8 +116,10 @@ class GameViewModel(
         val currentGame = gameState
         currentGame.player2.playerStatus = PlayerStatusEnum.ONLINE
 
+        val playerTypeInit = PlayerTypeEnum.entries.toTypedArray().random()
         val updatedGame = currentGame.copy(
             player2 = currentGame.player2,
+            currentPlayerType = playerTypeInit,
             updatedAt = System.currentTimeMillis(),
             modificationUser = "$deviceInfo/$androidVersion/updateStatusPlayer2"
         )
@@ -159,6 +182,9 @@ class GameViewModel(
                 override fun onDataChange(snapshot: DataSnapshot) {
                     snapshot.getValue(GameState::class.java)?.let {
                         _gameState.value = it
+                        if(it.gameStatus == GameStatusEnum.FINISHED) {
+                            openDialogs(it.winner)
+                        }
                     }
                 }
 
@@ -183,7 +209,7 @@ class GameViewModel(
             })
     }
 
-    fun makeMove(index: Int) {
+    private suspend fun makeMove(index: Int) {
         val currentGame = _gameState.value ?: return
         if (currentGame.board[index].isNotEmpty() || currentGame.winner.isNotEmpty()) return
 
@@ -211,6 +237,8 @@ class GameViewModel(
             modificationUser = "$deviceInfo/$androidVersion/makeMove",
             updatedAt = System.currentTimeMillis()
         )
+
+        _eventFlow.emit(UiEvent.SoundTap)
 
         database.child(BOARDS_REFERENCE).child(currentGame.gameId).setValue(updatedGame)
     }
@@ -275,5 +303,71 @@ class GameViewModel(
                     Log.e(TAG, "Error al obtener la sala: ${error.message}")
                 }
             })
+    }
+
+    fun getTurnMessage(): String {
+        if(_roomState.value?.roomStatus == RoomStatusEnum.OPENED) {
+            if(_gameState.value?.currentPlayerType?.name == _playerType.value) {
+                return  "esperando al Jugador 0"
+            }
+        }
+
+        if(_roomState.value?.roomStatus == RoomStatusEnum.COMPLETED) {
+
+            if(_gameState.value?.gameStatus == GameStatusEnum.CREATED
+                || _gameState.value?.gameStatus == GameStatusEnum.IN_PROGRESS) {
+                return if(_gameState.value?.currentPlayerType?.name == _playerType.value) {
+                    "es tu turno"
+                } else {
+                    "es turno del Jugador ${_gameState.value?.currentPlayerType?.name}"
+                }
+            }
+
+            if(_gameState.value?.gameStatus == GameStatusEnum.FINISHED) {
+                return when (_gameState.value?.winner) {
+                    "Draw" -> {
+                        "El juego ha terminado en empate"
+                    }
+                    _playerType.value -> {
+                        "¡Felicidades has ganado!"
+                    }
+                    else -> {
+                        "El juego ha terminado, has perdido"
+                    }
+                }
+            }
+        }
+
+        return ""
+    }
+
+    private fun openDialogs(winner: String) {
+        Log.e(TAG, "${_playerType.value} - Ganador: $winner")
+        when (winner) {
+            "Draw" -> {
+                Log.e(TAG, "Empate")
+                _showDialogDraw.value = true
+            }
+            _playerType.value -> {
+                Log.e(TAG, "Ganaste")
+                _showDialogWinner.value = true
+            }
+            else -> {
+                Log.e(TAG, "Perdiste")
+                _showDialogLoser.value = true
+            }
+        }
+    }
+
+    fun closeDialogs() {
+        _showDialogWinner.value = false
+        _showDialogDraw.value = false
+        _showDialogLoser.value = false
+    }
+
+    fun onMoveMade(index: Int) {
+        viewModelScope.launch {
+            makeMove(index)  // Ahora se ejecuta dentro de una corrutina
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.lmar.tictactoe.ui.screen.game
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,9 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +27,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,22 +47,40 @@ import androidx.navigation.compose.rememberNavController
 import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.core.enums.RoomStatusEnum
+import com.lmar.tictactoe.feature.sounds.SoundEffectPlayer
 import com.lmar.tictactoe.ui.component.CustomAppBar
 import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.ShadowText
+import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
+import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
+import kotlinx.coroutines.flow.collectLatest
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(
     navController: NavController,
     viewModel: GameViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val soundPlayer = remember { SoundEffectPlayer(context) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val gameState by viewModel.gameState.observeAsState()
     val roomState by viewModel.roomState.observeAsState()
     val playerType by viewModel.playerType.observeAsState()
+
+    val showDialogWinner by viewModel.showDialogWinner.observeAsState()
+    val showDialogDraw by viewModel.showDialogDraw.observeAsState()
+    val showDialogLoser by viewModel.showDialogLoser.observeAsState()
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collectLatest { event ->
+            when(event) {
+                GameViewModel.UiEvent.SoundTap -> soundPlayer.playClick()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -76,11 +95,12 @@ fun GameScreen(
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
         }
-    ) {
-        Box(
+    ) { paddingValues ->
+        Column (
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(paddingValues),
         ) {
             if (gameState == null) {
                 Box(
@@ -91,17 +111,33 @@ fun GameScreen(
                 }
             } else {
                 Column(
-                    modifier = Modifier.padding(32.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 32.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Spacer(modifier = Modifier.height(100.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        "Eres el jugador $playerType - ${roomState?.roomStatus}",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(0.dp),
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Text(
+                            "Eres el jugador $playerType",
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.End).padding(0.dp)
+                        )
+
+                        Text(
+                            viewModel.getTurnMessage(),
+                            color = MaterialTheme.colorScheme.tertiary,
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.End).padding(0.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.size(10.dp))
 
@@ -116,18 +152,21 @@ fun GameScreen(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            val glowingColor =
+                                if (roomState?.roomStatus?.name != RoomStatusEnum.OPENED.name
+                                    && gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name
+                                ) {
+                                    PlayerTypeEnum.X.color
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                }
+
                             GlowingCard(
                                 modifier = Modifier
                                     .width(70.dp)
                                     .height(60.dp),
-                                glowingColor =
-                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name)
-                                    PlayerTypeEnum.X.color
-                                else MaterialTheme.colorScheme.primary,
-                                containerColor =
-                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name)
-                                    PlayerTypeEnum.X.color
-                                else MaterialTheme.colorScheme.primary,
+                                glowingColor = glowingColor,
+                                containerColor = glowingColor,
                                 cornerRadius = 8.dp,
                             ) {
                                 Column(
@@ -145,16 +184,16 @@ fun GameScreen(
 
                             Spacer(modifier = Modifier.size(10.dp))
 
+                            val colorOnline =
+                                if (gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
+                                    Color.Green
+                                else
+                                    Color.Gray
+
                             GlowingCard(
-                                glowingColor =
-                                if (gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
-                                    PlayerTypeEnum.X.color
-                                else Color.Gray,
+                                glowingColor = colorOnline,
                                 glowingRadius = 10.dp,
-                                containerColor =
-                                if (gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
-                                    PlayerTypeEnum.X.color.copy(alpha = 0.4f)
-                                else Color.Gray.copy(alpha = 0.4f)
+                                containerColor = colorOnline
                             ) {
                                 Box(modifier = Modifier.size(10.dp))
                             }
@@ -178,22 +217,25 @@ fun GameScreen(
                             )
                         }
 
-                        //Player 2
+                        //Player O
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            val glowingColor =
+                                if (roomState?.roomStatus?.name != RoomStatusEnum.OPENED.name
+                                    && gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name
+                                ) {
+                                    PlayerTypeEnum.O.color
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                }
+
                             GlowingCard(
                                 modifier = Modifier
                                     .width(70.dp)
                                     .height(60.dp),
-                                glowingColor =
-                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name)
-                                    PlayerTypeEnum.O.color
-                                else MaterialTheme.colorScheme.primary,
-                                containerColor =
-                                if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name)
-                                    PlayerTypeEnum.O.color
-                                else MaterialTheme.colorScheme.primary,
+                                glowingColor = glowingColor,
+                                containerColor = glowingColor,
                                 cornerRadius = 8.dp,
                             ) {
                                 Column(
@@ -213,16 +255,16 @@ fun GameScreen(
 
                             Spacer(modifier = Modifier.size(10.dp))
 
+                            val colorOnline =
+                                if (gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
+                                    Color.Green
+                                else
+                                    Color.Gray
+
                             GlowingCard(
-                                glowingColor =
-                                if (gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
-                                    PlayerTypeEnum.O.color
-                                else Color.Gray,
+                                glowingColor = colorOnline,
                                 glowingRadius = 10.dp,
-                                containerColor =
-                                if (gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name)
-                                    PlayerTypeEnum.O.color.copy(alpha = 0.4f)
-                                else Color.Gray.copy(alpha = 0.4f)
+                                containerColor = colorOnline.copy(alpha = 0.6f)
                             ) {
                                 Box(modifier = Modifier.size(10.dp))
                             }
@@ -270,7 +312,7 @@ fun GameScreen(
                                                                 //&& gameState?.currentPlayerType?.name == playerType
                                                                 && gameState?.winner.isNullOrEmpty()
                                                     ) {
-                                                        viewModel.makeMove(index)
+                                                        viewModel.onMoveMade(index)
                                                     }
                                                     .padding(16.dp),
                                                 contentAlignment = Alignment.Center
@@ -302,16 +344,8 @@ fun GameScreen(
                         }
                     }
 
-                    gameState?.winner?.let { winner ->
+                    /*gameState?.winner?.let { winner ->
                         if (winner.isNotEmpty()) {
-                            Text(
-                                text = if (winner == "Draw") "¡Empate!" else "¡Ganador: $winner!",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF4CAF50),
-                                modifier = Modifier.padding(top = 16.dp)
-                            )
-
                             Button(
                                 onClick = { viewModel.onNewGame() },
                                 colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
@@ -319,6 +353,30 @@ fun GameScreen(
                             ) {
                                 Text(text = "Nuevo Juego", color = Color.White)
                             }
+                        }
+                    }*/
+
+                    Spacer(modifier = Modifier.size(50.dp))
+
+                    //Alertas
+                    if(showDialogWinner == true) {
+                        soundPlayer.playWin()
+                        MessageDialog(DialogTypeEnum.SUCCESS,"Ganador","¡Felicidades has ganado!") {
+                            viewModel.closeDialogs()
+                        }
+                    }
+
+                    if(showDialogDraw == true) {
+                        soundPlayer.playDraw()
+                        MessageDialog(DialogTypeEnum.INFO, "Empate", "El juego ha terminado en empate") {
+                            viewModel.closeDialogs()
+                        }
+                    }
+
+                    if(showDialogLoser == true) {
+                        soundPlayer.playLose()
+                        MessageDialog(DialogTypeEnum.ERROR, "Perdiste", "¡Has perdido!, inténtalo otra vez") {
+                            viewModel.closeDialogs()
                         }
                     }
                 }
