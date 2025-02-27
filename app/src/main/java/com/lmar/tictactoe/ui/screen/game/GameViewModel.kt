@@ -24,6 +24,7 @@ import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.core.enums.RoomStatusEnum
 import com.lmar.tictactoe.core.state.GameState
 import com.lmar.tictactoe.core.state.RoomState
+import com.lmar.tictactoe.feature.ia.GameIA
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -209,9 +210,9 @@ class GameViewModel(
             })
     }
 
-    private suspend fun makeMove(index: Int) {
+    private suspend fun playerMove(row: Int, col: Int) {
         val currentGame = _gameState.value ?: return
-        if (currentGame.board[index].isNotEmpty() || currentGame.winner.isNotEmpty()) return
+        if (currentGame.board[row][col].isNotEmpty() || currentGame.winner.isNotEmpty()) return
 
         if(playerType.value != currentGame.currentPlayerType.name) {
             Log.e(TAG, "No es tu turno")
@@ -219,15 +220,28 @@ class GameViewModel(
         }
 
         val newBoard = currentGame.board.toMutableList()
-        newBoard[index] = currentGame.currentPlayerType.name
+        newBoard[row][col] = currentGame.currentPlayerType.name
         val nextPlayerType =
             if (currentGame.currentPlayerType.name == currentGame.player1.playerType.name)
                 currentGame.player2.playerType
             else
                 currentGame.player1.playerType
 
-        val winner = checkWinner(newBoard)
-        val isFinished = winner.isNotEmpty() // Si hay ganador o empate, el juego termina
+        val result = GameIA.checkWinner(newBoard)
+        val isFinished = result != null // Si hay ganador o empate, el juego termina
+
+        var winner = ""
+        when(result) {
+            1 -> {
+                winner = PlayerTypeEnum.O.name
+            }
+            0 -> {
+                winner = "Draw"
+            }
+            -1 -> {
+                winner = PlayerTypeEnum.X.name
+            }
+        }
 
         val updatedGame = currentGame.copy(
             board = newBoard,
@@ -241,21 +255,6 @@ class GameViewModel(
         _eventFlow.emit(UiEvent.SoundTap)
 
         database.child(BOARDS_REFERENCE).child(currentGame.gameId).setValue(updatedGame)
-    }
-
-    private fun checkWinner(board: List<String>): String {
-        val winningPositions = listOf(
-            listOf(0, 1, 2), listOf(3, 4, 5), listOf(6, 7, 8),
-            listOf(0, 3, 6), listOf(1, 4, 7), listOf(2, 5, 8),
-            listOf(0, 4, 8), listOf(2, 4, 6)
-        )
-        for (positions in winningPositions) {
-            val (a, b, c) = positions
-            if (board[a].isNotEmpty() && board[a] == board[b] && board[b] == board[c]) {
-                return board[a]
-            }
-        }
-        return if (board.all { it.isNotEmpty() }) "Draw" else ""
     }
 
     private fun getRoomById(roomId: String, onComplete: () -> Unit) {
@@ -365,9 +364,9 @@ class GameViewModel(
         _showDialogLoser.value = false
     }
 
-    fun onMoveMade(index: Int) {
+    fun onPlayerMove(row: Int, col: Int) {
         viewModelScope.launch {
-            makeMove(index)
+            playerMove(row, col)
         }
     }
 }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 
     //Firebase
     id("com.google.gms.google-services")
@@ -51,7 +52,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
     packaging {
         resources {
@@ -73,10 +74,18 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
 
+    // Compose Compiler
+    implementation(libs.androidx.compiler)
+
     //Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
+    implementation(libs.firebase.auth.ktx)
+
+    //Gestion de estados
     implementation(libs.androidx.runtime.livedata)
+
+    //Fonts
     implementation(libs.androidx.ui.text.google.fonts)
 
     //Airbnb Lottie

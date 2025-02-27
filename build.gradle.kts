@@ -5,4 +5,5 @@ plugins {
 
     //Firebase
     alias(libs.plugins.google.gms.google.services) apply false
+    alias(libs.plugins.kotlin.compose) apply false
 }

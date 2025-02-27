@@ -13,16 +13,24 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
 import com.lmar.tictactoe.ui.screen.room.RoomScreen
+import com.lmar.tictactoe.ui.screen.single_game.SingleGameScreen
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var auth: FirebaseAuth
+
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        auth = Firebase.auth
 
         enableEdgeToEdge()
         setContent {
@@ -38,6 +46,10 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(route = ScreenRoutes.HomeScreen.route) {
                             HomeScreen(navController)
+                        }
+
+                        composable(route = ScreenRoutes.SingleGameScreen.route) {
+                            SingleGameScreen(navController)
                         }
 
                         composable(

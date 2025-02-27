@@ -1,15 +1,17 @@
-package com.lmar.tictactoe.ui.screen.game
+package com.lmar.tictactoe.ui.screen.single_game
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,12 +23,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,42 +37,32 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.feature.sounds.SoundEffectPlayer
 import com.lmar.tictactoe.ui.component.Board
 import com.lmar.tictactoe.ui.component.CustomAppBar
+import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.PlayersInfo
+import com.lmar.tictactoe.ui.component.ShadowText
 import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
 import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
-import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GameScreen(
+fun SingleGameScreen(
     navController: NavController,
-    viewModel: GameViewModel = viewModel()
+    viewModel: SingleGameViewModel = viewModel()
 ) {
     val context = LocalContext.current
+
     val soundPlayer = remember { SoundEffectPlayer(context) }
-
     val snackbarHostState = remember { SnackbarHostState() }
-    val gameState by viewModel.gameState.observeAsState()
-    val roomState by viewModel.roomState.observeAsState()
-    val playerType by viewModel.playerType.observeAsState()
 
+    val gameState by viewModel.gameState.observeAsState()
     val showDialogWinner by viewModel.showDialogWinner.observeAsState()
     val showDialogDraw by viewModel.showDialogDraw.observeAsState()
     val showDialogLoser by viewModel.showDialogLoser.observeAsState()
-
-    LaunchedEffect(key1 = true) {
-        viewModel.eventFlow.collectLatest { event ->
-            when(event) {
-                GameViewModel.UiEvent.SoundTap -> soundPlayer.playClick()
-            }
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -114,7 +106,7 @@ fun GameScreen(
                         horizontalAlignment = Alignment.End
                     ) {
                         Text(
-                            "Eres el jugador $playerType",
+                            "Eres el jugador X",
                             color = MaterialTheme.colorScheme.tertiary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
@@ -122,7 +114,7 @@ fun GameScreen(
                         )
 
                         Text(
-                            viewModel.getTurnMessage(),
+                            "Message Turn",
                             color = MaterialTheme.colorScheme.tertiary,
                             fontSize = 12.sp,
                             modifier = Modifier.align(Alignment.End).padding(0.dp)
@@ -149,32 +141,17 @@ fun GameScreen(
 
                     PlayersInfo(
                         "Jugador X",
-                        "Jugador O",
+                        "Computadora",
                         glowingColorX,
-                        glowingColorO,
-                        true,
-                        gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name,
-                        gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name
+                        glowingColorO
                     )
 
                     Box(modifier = Modifier.height(16.dp))
 
-                    // Tablero
+                    // Tablero de juego con animación y bordes redondeados
                     gameState?.board?.let {
-                        Board(it, roomState?.roomCode ?: "", onCellClick = viewModel::onPlayerMove)
+                        Board(it, onCellClick = viewModel::onPlayerMove)
                     }
-
-                    /*gameState?.winner?.let { winner ->
-                        if (winner.isNotEmpty()) {
-                            Button(
-                                onClick = { viewModel.onNewGame() },
-                                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
-                                modifier = Modifier.padding(top = 12.dp)
-                            ) {
-                                Text(text = "Nuevo Juego", color = Color.White)
-                            }
-                        }
-                    }*/
 
                     Spacer(modifier = Modifier.size(50.dp))
 
@@ -207,8 +184,8 @@ fun GameScreen(
 
 @Preview(showBackground = true)
 @Composable
-private fun GameScreenPreview() {
+private fun SingleGameScreenPreview() {
     TicTacToeTheme {
-        GameScreen(rememberNavController())
+        SingleGameScreen(rememberNavController())
     }
 }
