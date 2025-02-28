@@ -54,8 +54,8 @@ fun GameScreen(
 ) {
     val context = LocalContext.current
     val soundPlayer = remember { SoundEffectPlayer(context) }
-
     val snackbarHostState = remember { SnackbarHostState() }
+
     val gameState by viewModel.gameState.observeAsState()
     val roomState by viewModel.roomState.observeAsState()
     val playerType by viewModel.playerType.observeAsState()
@@ -63,6 +63,8 @@ fun GameScreen(
     val showDialogWinner by viewModel.showDialogWinner.observeAsState()
     val showDialogDraw by viewModel.showDialogDraw.observeAsState()
     val showDialogLoser by viewModel.showDialogLoser.observeAsState()
+
+    val winCells by viewModel.winCells.observeAsState()
 
     LaunchedEffect(key1 = true) {
         viewModel.eventFlow.collectLatest { event ->
@@ -132,16 +134,14 @@ fun GameScreen(
                     Spacer(modifier = Modifier.size(10.dp))
 
                     val glowingColorX =
-                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name
-                        ) {
+                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name) {
                             PlayerTypeEnum.X.color
                         } else {
                             MaterialTheme.colorScheme.primary
                         }
 
                     val glowingColorO =
-                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name
-                        ) {
+                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name) {
                             PlayerTypeEnum.O.color
                         } else {
                             MaterialTheme.colorScheme.primary
@@ -161,18 +161,21 @@ fun GameScreen(
 
                     // Tablero
                     gameState?.board?.let {
-                        Board(it, roomState?.roomCode ?: "", onCellClick = viewModel::onPlayerMove)
+                        Board(
+                            it,
+                            roomCode = roomState?.roomCode ?: "",
+                            winCells = winCells ?: emptyList(),
+                            onCellClick = viewModel::onPlayerMove
+                        )
                     }
 
-                    /*gameState?.winner?.let { winner ->
-                        if (winner.isNotEmpty()) {
-                            Button(
-                                onClick = { viewModel.onNewGame() },
-                                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
-                                modifier = Modifier.padding(top = 12.dp)
-                            ) {
-                                Text(text = "Nuevo Juego", color = Color.White)
-                            }
+                    /*if(gameState?.gameStatus == GameStatusEnum.FINISHED) {
+                        Button(
+                            onClick = { viewModel.onNewGame() },
+                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
+                            Text(text = "Nuevo Juego", color = Color.White)
                         }
                     }*/
 

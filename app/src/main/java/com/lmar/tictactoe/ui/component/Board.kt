@@ -1,6 +1,8 @@
 package com.lmar.tictactoe.ui.component
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +30,8 @@ import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 fun Board(
     board: MutableList<MutableList<String>>,
     roomCode: String = "",
-    onCellClick: (Int, Int) -> Unit
+    winCells:  List<Pair<Int, Int>> = emptyList(),
+    onCellClick: ((Int, Int) -> Unit)?
 ) {
     GlowingCard(
         glowingColor = MaterialTheme.colorScheme.primary,
@@ -46,7 +50,11 @@ fun Board(
             for (row in 0..2) {
                 Row {
                     for (col in 0..2) {
-                        Cell(board[row][col]) { onCellClick(row, col) }
+                        var isWinCell = false
+                        if(winCells.isNotEmpty() && winCells.contains(Pair(row, col))) {
+                            isWinCell = true
+                        }
+                        Cell(board[row][col], isWinCell) { if(onCellClick != null) onCellClick(row, col) }
                     }
                 }
             }
@@ -63,7 +71,16 @@ fun Board(
 }
 
 @Composable
-fun Cell(value: String, onClick: () -> Unit) {
+fun Cell(
+    value: String,
+    isWinCell: Boolean = false,
+    onClick: () -> Unit
+) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isWinCell) Color.White else MaterialTheme.colorScheme.tertiary,
+        animationSpec = tween(durationMillis = 1000)
+    )
+
     Box(modifier = Modifier.padding(2.dp)) {
         Box(
             modifier = Modifier
@@ -74,11 +91,7 @@ fun Cell(value: String, onClick: () -> Unit) {
                     RoundedCornerShape(8.dp)
                 )
                 .clip(RoundedCornerShape(8.dp))
-                .background(
-                    MaterialTheme.colorScheme.tertiary.copy(
-                        alpha = 0.2f
-                    )
-                )
+                .background(backgroundColor.copy(alpha = 0.3f))
                 .clickable(enabled = value.isEmpty(), onClick = onClick)
                 .padding(16.dp),
             contentAlignment = Alignment.Center
@@ -104,15 +117,17 @@ fun makeMove(row: Int, col: Int) {}
 @Composable
 fun BoardPreview() {
     val board: MutableList<MutableList<String>> = mutableListOf(
-        MutableList(3) {"X"},
-        MutableList(3) {""},
-        MutableList(3) {"O"}
+        mutableListOf("X", "0", "0"),
+        mutableListOf("0", "X", "0"),
+        mutableListOf("0", "X", "X")
     )
 
+    val winCell = listOf(Pair(0,0), Pair(1,1), Pair(2,2))
     MaterialTheme {
         Board(
             board,
             roomCode = "123456",
+            winCells = winCell,
             onCellClick = { i, j ->
                 makeMove(i,j)
             }

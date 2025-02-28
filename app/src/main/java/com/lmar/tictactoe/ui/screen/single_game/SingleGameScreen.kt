@@ -4,16 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +23,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -30,20 +32,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.feature.sounds.SoundEffectPlayer
 import com.lmar.tictactoe.ui.component.Board
 import com.lmar.tictactoe.ui.component.CustomAppBar
-import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.PlayersInfo
-import com.lmar.tictactoe.ui.component.ShadowText
 import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
 import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
@@ -63,6 +63,9 @@ fun SingleGameScreen(
     val showDialogWinner by viewModel.showDialogWinner.observeAsState()
     val showDialogDraw by viewModel.showDialogDraw.observeAsState()
     val showDialogLoser by viewModel.showDialogLoser.observeAsState()
+
+    val winCells by viewModel.winCells.observeAsState()
+    val isBoardDisabled by viewModel.isBoardDisabled.collectAsState()
 
     Scaffold(
         topBar = {
@@ -106,34 +109,22 @@ fun SingleGameScreen(
                         horizontalAlignment = Alignment.End
                     ) {
                         Text(
-                            "Eres el jugador X",
-                            color = MaterialTheme.colorScheme.tertiary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.End).padding(0.dp)
-                        )
-
-                        Text(
-                            "Message Turn",
+                            if(gameState?.currentPlayerType == PlayerTypeEnum.X) "¡Es tu turno!" else "¡Turno de la Computadora!",
                             color = MaterialTheme.colorScheme.tertiary,
                             fontSize = 12.sp,
-                            modifier = Modifier.align(Alignment.End).padding(0.dp)
+                            modifier = Modifier.align(Alignment.CenterHorizontally).padding(0.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.size(10.dp))
-
                     val glowingColorX =
-                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name
-                        ) {
+                        if (gameState?.currentPlayerType == PlayerTypeEnum.X) {
                             PlayerTypeEnum.X.color
                         } else {
                             MaterialTheme.colorScheme.primary
                         }
 
                     val glowingColorO =
-                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name
-                        ) {
+                        if (gameState?.currentPlayerType == PlayerTypeEnum.O) {
                             PlayerTypeEnum.O.color
                         } else {
                             MaterialTheme.colorScheme.primary
@@ -150,7 +141,21 @@ fun SingleGameScreen(
 
                     // Tablero de juego con animación y bordes redondeados
                     gameState?.board?.let {
-                        Board(it, onCellClick = viewModel::onPlayerMove)
+                        Board(
+                            it,
+                            winCells = winCells ?: emptyList(),
+                            onCellClick = if (isBoardDisabled) null else viewModel::onPlayerMove
+                        )
+                    }
+
+                    if(gameState?.gameStatus == GameStatusEnum.FINISHED) {
+                        Button(
+                            onClick = { viewModel.createNewGame() },
+                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
+                            Text(text = "Nuevo Juego", color = Color.White)
+                        }
                     }
 
                     Spacer(modifier = Modifier.size(50.dp))

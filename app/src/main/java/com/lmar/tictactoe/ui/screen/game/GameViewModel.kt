@@ -25,6 +25,7 @@ import com.lmar.tictactoe.core.enums.RoomStatusEnum
 import com.lmar.tictactoe.core.state.GameState
 import com.lmar.tictactoe.core.state.RoomState
 import com.lmar.tictactoe.feature.ia.GameIA
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -81,6 +82,9 @@ class GameViewModel(
     private val _showDialogLoser = MutableLiveData(false)
     val showDialogLoser: LiveData<Boolean> = _showDialogLoser
 
+    private val _winCells = MutableLiveData<List<Pair<Int, Int>>>()
+    val winCells: MutableLiveData<List<Pair<Int, Int>>> = _winCells
+
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
@@ -91,15 +95,12 @@ class GameViewModel(
     init {
         _roomReady.observeForever { (roomId, playerType) ->
             Log.d(TAG, "RoomId: $roomId, PlayerType: $playerType")
-
-            if (roomId == "0") {
-                createNewGame()
-            } else {
+            if (roomId != "0") {
                 getRoomById(roomId) {
                     if (playerType == PlayerTypeEnum.X.name) { // Player 1 (Creador)
                         Log.d(TAG, "Jugador X va a crear la partida")
                         listenForRoomUpdates(roomId)
-                        createNewGameMultiPlayer(roomId)
+                        createNewGame(roomId)
                     } else { // Player 2 (Se une)
                         Log.d(TAG, "Jugador O va a unirse a la partida")
                         getGameByRoomId(roomId) { gameId ->
@@ -128,30 +129,12 @@ class GameViewModel(
         database.child(BOARDS_REFERENCE).child(currentGame.gameId).setValue(updatedGame)
     }
 
-    private fun createNewGame() {
-        val gameId = UUID.randomUUID().toString()
-        val newGame = GameState(gameId = gameId)
-
-        newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGame"
-
-        Log.d(TAG, "Creando Juego: $gameId")
-
-        database.child(BOARDS_REFERENCE)
-            .child(gameId)
-            .setValue(newGame)
-            .addOnSuccessListener {
-                Log.d(TAG, "Juego creado con éxito: $gameId")
-                listenForUpdates(gameId) // Solo escuchar si se creó con éxito
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error al crear el juego $gameId", e)
-            }
-    }
-
-    private fun createNewGameMultiPlayer(roomId: String) {
+    private fun createNewGame(roomId: String) {
         val gameId = UUID.randomUUID().toString()
         val newGame = GameState(gameId = gameId, roomId = roomId, GameTypeEnum.MULTIPLAYER)
-        newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGameMultiPlayer"
+        newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGame"
+
+        _winCells.value = emptyList()
 
         Log.d(TAG, "Creando Juego: $gameId")
 
@@ -170,10 +153,8 @@ class GameViewModel(
     }
 
     fun onNewGame() {
-        if(roomId.value?.isEmpty() == true) {
-            createNewGame()
-        } else {
-            roomId.value?.let { createNewGameMultiPlayer(it) }
+        roomId.value?.let {
+            createNewGame(it)
         }
     }
 
@@ -184,7 +165,7 @@ class GameViewModel(
                     snapshot.getValue(GameState::class.java)?.let {
                         _gameState.value = it
                         if(it.gameStatus == GameStatusEnum.FINISHED) {
-                            openDialogs(it.winner)
+                            endGame(it.winner)
                         }
                     }
                 }
@@ -340,24 +321,6 @@ class GameViewModel(
         return ""
     }
 
-    private fun openDialogs(winner: String) {
-        Log.e(TAG, "${_playerType.value} - Ganador: $winner")
-        when (winner) {
-            "Draw" -> {
-                Log.e(TAG, "Empate")
-                _showDialogDraw.value = true
-            }
-            _playerType.value -> {
-                Log.e(TAG, "Ganaste")
-                _showDialogWinner.value = true
-            }
-            else -> {
-                Log.e(TAG, "Perdiste")
-                _showDialogLoser.value = true
-            }
-        }
-    }
-
     fun closeDialogs() {
         _showDialogWinner.value = false
         _showDialogDraw.value = false
@@ -367,6 +330,24 @@ class GameViewModel(
     fun onPlayerMove(row: Int, col: Int) {
         viewModelScope.launch {
             playerMove(row, col)
+        }
+    }
+
+    private fun getWinCells() {
+        gameState.value?.let { gameState ->
+            _winCells.value = GameIA.getWinCells(gameState.board, gameState.winner)
+        }
+    }
+
+    private fun endGame(winner: String) {
+        getWinCells()
+        viewModelScope.launch {
+            delay(1500)
+            when(winner) {
+                _playerType.value -> _showDialogWinner.value = true
+                "Draw" -> _showDialogDraw.value = true
+                else -> _showDialogLoser.value = true
+            }
         }
     }
 }

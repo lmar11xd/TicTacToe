@@ -21,6 +21,8 @@ import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.core.state.GameState
 import com.lmar.tictactoe.feature.ia.GameIA
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -53,14 +55,21 @@ class SingleGameViewModel(
     private val _gameState = MutableLiveData<GameState>()
     val gameState: LiveData<GameState> = _gameState
 
+    private val _winCells = MutableLiveData<List<Pair<Int, Int>>>()
+    val winCells: MutableLiveData<List<Pair<Int, Int>>> = _winCells
+
+    private val _isBoardDisabled = MutableStateFlow(false)
+    val isBoardDisabled: StateFlow<Boolean> = _isBoardDisabled
+
     val isLoading = MutableLiveData(true)
 
     init {
         createNewGame()
     }
 
-    private fun createNewGame() {
+    fun createNewGame() {
         isLoading.value = true
+        _winCells.value = emptyList()
         val gameId = UUID.randomUUID().toString()
         val newGame = GameState(gameId = gameId)
 
@@ -88,6 +97,9 @@ class SingleGameViewModel(
                 override fun onDataChange(snapshot: DataSnapshot) {
                     snapshot.getValue(GameState::class.java)?.let {
                         _gameState.value = it
+                        if(it.gameStatus == GameStatusEnum.FINISHED) {
+                            endGame(it.winner)
+                        }
                     }
                 }
 
@@ -97,9 +109,23 @@ class SingleGameViewModel(
             })
     }
 
+    private fun endGame(winner: String) {
+        getWinCells()
+        viewModelScope.launch {
+            delay(1500)
+            when(winner) {
+                PlayerTypeEnum.X.name -> _showDialogWinner.value = true
+                PlayerTypeEnum.O.name -> _showDialogLoser.value = true
+                else -> _showDialogDraw.value = true
+            }
+        }
+    }
+
     fun onPlayerMove(row: Int, col: Int) {
         viewModelScope.launch {
+            _isBoardDisabled.value = true // 🔒 Desactiva el tablero
             playerMove(row, col)
+            _isBoardDisabled.value = false // 🔓 Reactiva el tablero después del turno IA
         }
     }
 
@@ -136,19 +162,16 @@ class SingleGameViewModel(
             when (result) {
                 1 -> {
                     winner = PlayerTypeEnum.O.name
-                    _showDialogLoser.value = true
                     state.gameStatus = GameStatusEnum.FINISHED
                     Log.e(TAG, "Perdiste")
                 }
                 0 -> {
                     winner = "Draw"
-                    _showDialogDraw.value = true
                     state.gameStatus = GameStatusEnum.FINISHED
                     Log.e(TAG, "Empate")
                 }
                 -1 -> {
                     winner = PlayerTypeEnum.X.name
-                    _showDialogWinner.value = true
                     state.gameStatus = GameStatusEnum.FINISHED
                     Log.e(TAG, "Ganaste")
                 }
@@ -169,6 +192,12 @@ class SingleGameViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             database.child(BOARDS_REFERENCE).child(state.gameId).setValue(updatedGame)
+        }
+    }
+
+    private fun getWinCells() {
+        gameState.value?.let { gameState ->
+            _winCells.value = GameIA.getWinCells(gameState.board, gameState.winner)
         }
     }
 

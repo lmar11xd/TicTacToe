@@ -20,24 +20,24 @@ class GameIA(
     companion object {
         private const val TAG = "GameIA"
 
+        private val WINPATTERNS = listOf(
+            // Filas
+            listOf(Pair(0, 0), Pair(0, 1), Pair(0, 2)),
+            listOf(Pair(1, 0), Pair(1, 1), Pair(1, 2)),
+            listOf(Pair(2, 0), Pair(2, 1), Pair(2, 2)),
+
+            // Columnas
+            listOf(Pair(0, 0), Pair(1, 0), Pair(2, 0)),
+            listOf(Pair(0, 1), Pair(1, 1), Pair(2, 1)),
+            listOf(Pair(0, 2), Pair(1, 2), Pair(2, 2)),
+
+            //Diagonales
+            listOf(Pair(0, 0), Pair(1, 1), Pair(2, 2)),
+            listOf(Pair(0, 2), Pair(1, 1), Pair(2, 0)),
+        )
+
         private fun checkWin(board: MutableList<MutableList<String>>, player: String): Boolean {
-            val winPatterns = listOf(
-                // Filas
-                listOf(Pair(0, 0), Pair(0, 1), Pair(0, 2)),
-                listOf(Pair(1, 0), Pair(1, 1), Pair(1, 2)),
-                listOf(Pair(2, 0), Pair(2, 1), Pair(2, 2)),
-
-                // Columnas
-                listOf(Pair(0, 0), Pair(1, 0), Pair(2, 0)),
-                listOf(Pair(0, 1), Pair(1, 1), Pair(2, 1)),
-                listOf(Pair(0, 2), Pair(1, 2), Pair(2, 2)),
-
-                //Diagonales
-                listOf(Pair(0, 0), Pair(1, 1), Pair(2, 2)),
-                listOf(Pair(0, 2), Pair(1, 1), Pair(2, 0)),
-            )
-
-            return winPatterns.any { pattern -> pattern.all { board[it.first][it.second] == player } }
+            return WINPATTERNS.any { pattern -> pattern.all { board[it.first][it.second] == player } }
         }
 
         fun checkWinner(board: MutableList<MutableList<String>>): Int? {
@@ -45,6 +45,15 @@ class GameIA(
             if(checkWin(board, PlayerTypeEnum.X.name)) return -1 //Jugador gana
             if(board.all { row -> row.all { it != "" } }) return 0 //Empate
             return null //juego en progreso
+        }
+
+        fun getWinCells(board: MutableList<MutableList<String>>, player: String): List<Pair<Int, Int>> {
+            for (line in WINPATTERNS) {
+                if (line.all { (row, col) -> board[row][col] == player }) {
+                    return line
+                }
+            }
+            return emptyList() // No hay línea ganadora
         }
 
     }
