@@ -21,8 +21,10 @@ import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.core.state.GameState
 import com.lmar.tictactoe.feature.ia.GameIA
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -62,6 +64,13 @@ class SingleGameViewModel(
     val isBoardDisabled: StateFlow<Boolean> = _isBoardDisabled
 
     val isLoading = MutableLiveData(true)
+
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    sealed class UiEvent {
+        data object SoundTap: UiEvent()
+    }
 
     init {
         createNewGame()
@@ -136,7 +145,11 @@ class SingleGameViewModel(
                     Log.e(TAG, "Movimiento del Jugador X - IA")
                     state.board[row][col] = PlayerTypeEnum.X.name
                     ia.recordPlayerMove(row, col) // Guardamos el movimiento del jugador
+
+                    _eventFlow.emit(UiEvent.SoundTap)
+
                     checkGameState()
+
                     if (state.gameStatus != GameStatusEnum.FINISHED) {
                         delay(750)
                         makeAIMove()
@@ -146,11 +159,14 @@ class SingleGameViewModel(
         }
     }
 
-    private fun makeAIMove() {
+    private suspend fun makeAIMove() {
         _gameState.value?.let { state ->
             Log.e(TAG, "Movimiento del Jugador O - IA")
             val move = ia.getNextMove(state.board)
             state.board[move.first][move.second] = PlayerTypeEnum.O.name
+
+            _eventFlow.emit(UiEvent.SoundTap)
+
             checkGameState()
         }
     }
@@ -177,11 +193,12 @@ class SingleGameViewModel(
                 }
                 else -> {
                     Log.e(TAG,"Juego en progreso")
+                    //Cambiar turno
                     state.currentPlayerType =
-                        if (state.currentPlayerType == state.player1.playerType)
-                            state.player2.playerType
+                        if (state.currentPlayerType == PlayerTypeEnum.X)
+                            PlayerTypeEnum.O
                         else
-                            state.player1.playerType
+                            PlayerTypeEnum.X
                 }
             }
 
@@ -191,6 +208,7 @@ class SingleGameViewModel(
                 modificationUser = "$deviceInfo/$androidVersion/checkGameState",
                 updatedAt = System.currentTimeMillis()
             )
+
             database.child(BOARDS_REFERENCE).child(state.gameId).setValue(updatedGame)
         }
     }

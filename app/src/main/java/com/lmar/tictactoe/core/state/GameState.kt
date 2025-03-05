@@ -3,7 +3,6 @@ package com.lmar.tictactoe.core.state
 import com.lmar.tictactoe.core.entity.Player
 import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.GameTypeEnum
-import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 
 data class GameState(
@@ -11,10 +10,9 @@ data class GameState(
     var roomId: String = "",
     var gameType: GameTypeEnum = GameTypeEnum.SINGLE,
     var gameStatus: GameStatusEnum = GameStatusEnum.CREATED,
-    //var board: MutableList<String> = MutableList(9) { "" },
+    var player1: Player? = null,
+    var player2: Player? = null,
     var board: MutableList<MutableList<String>> = MutableList(3){ MutableList(3) { "" } },
-    var player1: Player = Player(PlayerTypeEnum.X, PlayerStatusEnum.ONLINE),
-    var player2: Player = Player(PlayerTypeEnum.O),
     var currentPlayerType: PlayerTypeEnum = PlayerTypeEnum.X,
     var winner: String = "",
     var modificationUser: String = "",
@@ -23,9 +21,11 @@ data class GameState(
 ) {
     constructor() : this("")// Constructor vacío requerido por Firebase
 
-    constructor(gameId: String) : this (
+    constructor(gameId: String, player1: Player?, player2: Player?) : this (
         gameId = gameId,
-        gameType = GameTypeEnum.SINGLE
+        gameType = GameTypeEnum.SINGLE,
+        player1 = player1,
+        player2 = player2
     )
 
 }

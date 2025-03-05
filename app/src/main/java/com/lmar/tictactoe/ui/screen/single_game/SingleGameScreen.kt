@@ -23,11 +23,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,7 +47,10 @@ import com.lmar.tictactoe.ui.component.CustomAppBar
 import com.lmar.tictactoe.ui.component.PlayersInfo
 import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
 import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
+import com.lmar.tictactoe.ui.screen.game.GameViewModel
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +70,18 @@ fun SingleGameScreen(
 
     val winCells by viewModel.winCells.observeAsState()
     val isBoardDisabled by viewModel.isBoardDisabled.collectAsState()
+
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {// Se ejecuta solo una vez
+        coroutineScope.launch {
+            viewModel.eventFlow.collectLatest { event ->
+                when(event) {
+                    SingleGameViewModel.UiEvent.SoundTap -> soundPlayer.playClick()
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {

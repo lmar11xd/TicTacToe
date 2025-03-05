@@ -76,20 +76,24 @@ class RoomViewModel : ViewModel() {
         searchRoom(roomCode) { dataSnapshot ->
             if (dataSnapshot != null) {
                 dataSnapshot.getValue(RoomState::class.java)?.let {
-                    _roomState.value = it
+                    if(it.roomStatus == RoomStatusEnum.OPENED) {
+                        _roomState.value = it
 
-                    //Jugador 2 se ha unido
-                    val updatedRoom = it.copy(
-                        roomStatus = RoomStatusEnum.COMPLETED,
-                        updatedAt = System.currentTimeMillis()
-                    )
+                        //Jugador 2 se ha unido
+                        val updatedRoom = it.copy(
+                            roomStatus = RoomStatusEnum.COMPLETED,
+                            updatedAt = System.currentTimeMillis()
+                        )
 
-                    database.child(it.roomId).setValue(updatedRoom)
+                        database.child(it.roomId).setValue(updatedRoom)
 
-                    onResult(true, it.roomId)
+                        onResult(true, it.roomId)
+                    } else {
+                        onResult(false, "¡Sala llena!")
+                    }
                 }
             } else {
-                onResult(false, "Sala no encontrada")
+                onResult(false, "¡Sala no encontrada, intenta con otro código!")
             }
         }
     }

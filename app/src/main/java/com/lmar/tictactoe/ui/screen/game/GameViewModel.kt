@@ -17,14 +17,16 @@ import com.google.firebase.database.database
 import com.lmar.tictactoe.core.Constants.BOARDS_REFERENCE
 import com.lmar.tictactoe.core.Constants.DATABASE_REFERENCE
 import com.lmar.tictactoe.core.Constants.ROOMS_REFERENCE
+import com.lmar.tictactoe.core.entity.Player
+import com.lmar.tictactoe.core.enums.ActionTypeEnum
 import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.GameTypeEnum
 import com.lmar.tictactoe.core.enums.PlayerStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
-import com.lmar.tictactoe.core.enums.RoomStatusEnum
 import com.lmar.tictactoe.core.state.GameState
 import com.lmar.tictactoe.core.state.RoomState
 import com.lmar.tictactoe.feature.ia.GameIA
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -41,6 +43,9 @@ class GameViewModel(
 
     private var database: DatabaseReference = Firebase.database.getReference(DATABASE_REFERENCE)
 
+    private val _actionType = MutableLiveData(savedStateHandle.get<String?>("actionType"))
+    private val actionType: LiveData<String?> = _actionType
+
     private val _roomId = MutableLiveData(savedStateHandle.get<String?>("roomId"))
     private val roomId: LiveData<String?> = _roomId
 
@@ -54,17 +59,18 @@ class GameViewModel(
     val roomState: LiveData<RoomState> = _roomState
 
     private val _roomReady = MediatorLiveData<Pair<String, String>>().apply {
-        addSource(_roomId) { id ->
-            val type = _playerType.value
-            if (!id.isNullOrEmpty() && !type.isNullOrEmpty()) {
-                val newValue = Pair(id, type)
+        addSource(_actionType) { action ->
+            val id = _roomId.value
+            if (!id.isNullOrEmpty() && !action.isNullOrEmpty()) {
+                val newValue = Pair(id, action)
                 if (value != newValue) value = newValue
             }
         }
-        addSource(_playerType) { type ->
-            val id = _roomId.value
-            if (!id.isNullOrEmpty() && !type.isNullOrEmpty()) {
-                val newValue = Pair(id, type)
+
+        addSource(_roomId) { id ->
+            val action = _actionType.value
+            if (!id.isNullOrEmpty() && !action.isNullOrEmpty()) {
+                val newValue = Pair(id, action)
                 if (value != newValue) value = newValue
             }
         }
@@ -85,6 +91,9 @@ class GameViewModel(
     private val _winCells = MutableLiveData<List<Pair<Int, Int>>>()
     val winCells: MutableLiveData<List<Pair<Int, Int>>> = _winCells
 
+    private val _turnMessage = MutableLiveData<String>()
+    val turnMessage: MutableLiveData<String> = _turnMessage
+
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
@@ -93,16 +102,16 @@ class GameViewModel(
     }
 
     init {
-        _roomReady.observeForever { (roomId, playerType) ->
-            Log.d(TAG, "RoomId: $roomId, PlayerType: $playerType")
+        _roomReady.observeForever { (roomId, actionType) ->
+            Log.d(TAG, "RoomId: $roomId, ActionType: $actionType")
             if (roomId != "0") {
                 getRoomById(roomId) {
-                    if (playerType == PlayerTypeEnum.X.name) { // Player 1 (Creador)
-                        Log.d(TAG, "Jugador X va a crear la partida")
+                    if (actionType == ActionTypeEnum.CREATE.name) { // Player 1 (Creador)
+                        Log.d(TAG, "Crear partida")
                         listenForRoomUpdates(roomId)
                         createNewGame(roomId)
                     } else { // Player 2 (Se une)
-                        Log.d(TAG, "Jugador O va a unirse a la partida")
+                        Log.d(TAG, "Unirse a la partida")
                         getGameByRoomId(roomId) { gameId ->
                             listenForRoomUpdates(roomId)
                             listenForUpdates(gameId)
@@ -113,14 +122,20 @@ class GameViewModel(
         }
     }
 
-    private fun updateStatusPlayer2(gameState: GameState) {
+    private fun joinPlayer2(gameState: GameState) {
         Log.d(TAG, "Actualizando status del Jugador O ${gameState.gameId}")
         val currentGame = gameState
-        currentGame.player2.playerStatus = PlayerStatusEnum.ONLINE
+
+        var playerType = PlayerTypeEnum.X
+        if(currentGame.player1 != null && currentGame.player1?.playerType == PlayerTypeEnum.X) {
+            playerType = PlayerTypeEnum.O
+        }
+        val player = Player(playerType, PlayerStatusEnum.ONLINE)
+        _playerType.value = playerType.name
 
         val playerTypeInit = PlayerTypeEnum.entries.toTypedArray().random()
         val updatedGame = currentGame.copy(
-            player2 = currentGame.player2,
+            player2 = player,
             currentPlayerType = playerTypeInit,
             updatedAt = System.currentTimeMillis(),
             modificationUser = "$deviceInfo/$androidVersion/updateStatusPlayer2"
@@ -131,10 +146,23 @@ class GameViewModel(
 
     private fun createNewGame(roomId: String) {
         val gameId = UUID.randomUUID().toString()
-        val newGame = GameState(gameId = gameId, roomId = roomId, GameTypeEnum.MULTIPLAYER)
+
+        val playerType = PlayerTypeEnum.entries.random()
+
+        val player = Player(playerType, PlayerStatusEnum.ONLINE)
+
+        val newGame = GameState(
+            gameId = gameId,
+            roomId = roomId,
+            gameType = GameTypeEnum.MULTIPLAYER,
+            player1 = player
+        )
+
         newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGame"
 
+        _turnMessage.value = "Esperando al Jugador 0"
         _winCells.value = emptyList()
+        _playerType.value = playerType.name
 
         Log.d(TAG, "Creando Juego: $gameId")
 
@@ -164,6 +192,7 @@ class GameViewModel(
                 override fun onDataChange(snapshot: DataSnapshot) {
                     snapshot.getValue(GameState::class.java)?.let {
                         _gameState.value = it
+                        getTurnMessage(it)
                         if(it.gameStatus == GameStatusEnum.FINISHED) {
                             endGame(it.winner)
                         }
@@ -203,25 +232,19 @@ class GameViewModel(
         val newBoard = currentGame.board.toMutableList()
         newBoard[row][col] = currentGame.currentPlayerType.name
         val nextPlayerType =
-            if (currentGame.currentPlayerType.name == currentGame.player1.playerType.name)
-                currentGame.player2.playerType
+            if (currentGame.currentPlayerType.name == PlayerTypeEnum.X.name)
+                PlayerTypeEnum.O
             else
-                currentGame.player1.playerType
+                PlayerTypeEnum.X
 
         val result = GameIA.checkWinner(newBoard)
         val isFinished = result != null // Si hay ganador o empate, el juego termina
 
         var winner = ""
         when(result) {
-            1 -> {
-                winner = PlayerTypeEnum.O.name
-            }
-            0 -> {
-                winner = "Draw"
-            }
-            -1 -> {
-                winner = PlayerTypeEnum.X.name
-            }
+            1 -> winner = PlayerTypeEnum.O.name
+            0 -> winner = "Draw"
+            -1 -> winner = PlayerTypeEnum.X.name
         }
 
         val updatedGame = currentGame.copy(
@@ -262,19 +285,30 @@ class GameViewModel(
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        val gameSnapshot = snapshot.children.firstOrNull()
-                        Log.e(TAG, "Snapshot Game: $snapshot")
-                        if (gameSnapshot != null) {
-                            gameSnapshot.getValue(GameState::class.java)?.let {
+                        var lastGame: GameState? = null
+                        for(child in snapshot.children) {
+                            val game = child.getValue(GameState::class.java)
+                            if(game != null && game.gameStatus != GameStatusEnum.FINISHED) {
+                                // Se queda con el de mayor updatedAt
+                                if (lastGame == null || game.updatedAt > lastGame.updatedAt) {
+                                    lastGame = game
+                                }
+                            }
+                        }
+
+                        if (lastGame != null) {
+                            lastGame.let {
                                 _gameState.value = it
                                 Log.e(TAG, "Game: $it")
                                 Log.d(TAG, "Partida con roomId $roomId encontrada")
 
-                                updateStatusPlayer2(it)
+                                joinPlayer2(it)
                                 Log.d(TAG, "Status del Jugador O actualizado ")
 
                                 onComplete(it.gameId)
                             }
+                        } else {
+                            Log.d(TAG, "No se encontraron juegos en curso en la sala $roomId")
                         }
                     }
                 }
@@ -285,35 +319,26 @@ class GameViewModel(
             })
     }
 
-    fun getTurnMessage(): String {
-        if(_roomState.value?.roomStatus == RoomStatusEnum.OPENED) {
-            if(_gameState.value?.currentPlayerType?.name == _playerType.value) {
-                return  "esperando al Jugador 0"
+    fun getTurnMessage(gameState: GameState): String {
+        if(gameState.gameStatus == GameStatusEnum.CREATED
+            || gameState.gameStatus == GameStatusEnum.IN_PROGRESS) {
+            _turnMessage.value = if(gameState.currentPlayerType.name == _playerType.value) {
+                "es tu turno"
+            } else {
+                "es turno del Jugador ${gameState.currentPlayerType.name}"
             }
         }
 
-        if(_roomState.value?.roomStatus == RoomStatusEnum.COMPLETED) {
-
-            if(_gameState.value?.gameStatus == GameStatusEnum.CREATED
-                || _gameState.value?.gameStatus == GameStatusEnum.IN_PROGRESS) {
-                return if(_gameState.value?.currentPlayerType?.name == _playerType.value) {
-                    "es tu turno"
-                } else {
-                    "es turno del Jugador ${_gameState.value?.currentPlayerType?.name}"
+        if(gameState.gameStatus == GameStatusEnum.FINISHED) {
+            _turnMessage.value = when (gameState.winner) {
+                "Draw" -> {
+                    "El juego ha terminado en empate"
                 }
-            }
-
-            if(_gameState.value?.gameStatus == GameStatusEnum.FINISHED) {
-                return when (_gameState.value?.winner) {
-                    "Draw" -> {
-                        "El juego ha terminado en empate"
-                    }
-                    _playerType.value -> {
-                        "¡Felicidades has ganado!"
-                    }
-                    else -> {
-                        "El juego ha terminado, has perdido"
-                    }
+                _playerType.value -> {
+                    "¡Felicidades has ganado!"
+                }
+                else -> {
+                    "El juego ha terminado, has perdido"
                 }
             }
         }
@@ -328,7 +353,7 @@ class GameViewModel(
     }
 
     fun onPlayerMove(row: Int, col: Int) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {// Corre en un hilo de fondo
             playerMove(row, col)
         }
     }
@@ -341,13 +366,36 @@ class GameViewModel(
 
     private fun endGame(winner: String) {
         getWinCells()
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main) { // Mantiene la UI reactiva
             delay(1500)
             when(winner) {
                 _playerType.value -> _showDialogWinner.value = true
                 "Draw" -> _showDialogDraw.value = true
                 else -> _showDialogLoser.value = true
             }
+        }
+    }
+
+    fun onPlayerJoined(player: String) {
+        Log.e("GameScreen", "El jugador $player ingresó a la pantalla del juego")
+    }
+
+    fun onPlayerExit() {
+        Log.e("GameScreen", "El jugador $_playerType.value salió de la pantalla del juego")
+        _gameState.value?.let {
+            val currentGame = it
+            if(_playerType.value == currentGame.player1?.playerType?.name) {
+                currentGame.player1?.playerStatus = PlayerStatusEnum.OFFLINE
+            } else {
+                currentGame.player2?.playerStatus = PlayerStatusEnum.OFFLINE
+            }
+
+            val updatedGame = currentGame.copy(
+                modificationUser = "$deviceInfo/$androidVersion/onPlayerExit",
+                updatedAt = System.currentTimeMillis()
+            )
+
+            database.child(BOARDS_REFERENCE).child(currentGame.gameId).setValue(updatedGame)
         }
     }
 }

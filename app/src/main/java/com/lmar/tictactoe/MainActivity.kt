@@ -16,6 +16,7 @@ import androidx.navigation.navArgument
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import com.lmar.tictactoe.core.enums.ActionTypeEnum
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
@@ -53,15 +54,15 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(
-                            route = ScreenRoutes.GameScreen.route + "?roomId={roomId}&playerType={playerType}",
+                            route = ScreenRoutes.GameScreen.route + "?actionType={actionType}&roomId={roomId}",
                             arguments = listOf(
+                                navArgument("actionType") {
+                                    type = NavType.StringType
+                                    defaultValue = ActionTypeEnum.CREATE.name // Valor por defecto
+                                },
                                 navArgument("roomId") {
                                     type = NavType.StringType
                                     defaultValue = "0"
-                                },
-                                navArgument("playerType") {
-                                    type = NavType.StringType
-                                    defaultValue = "X" // Valor por defecto
                                 }
                             )
                         ){

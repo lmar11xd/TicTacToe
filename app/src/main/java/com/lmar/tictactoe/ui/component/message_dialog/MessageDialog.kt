@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,24 +38,21 @@ import com.lmar.tictactoe.ui.theme.Shapes
 import com.lmar.tictactoe.ui.theme.SuccessColor
 
 @Composable
-private fun SuccessDialog(
+private fun CustomDialog(
     title: String,
     description: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    buttonColor: Color,
+    headerContent: @Composable BoxScope.() -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
-        Box(
-            modifier = Modifier
-                .width(300.dp)
-                .height(400.dp)
-        ) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(modifier = Modifier.size(300.dp)) {
             Column(
                 modifier = Modifier
-                    .size(300.dp)
+                    .width(300.dp)
+                    .height(230.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                Spacer(modifier = Modifier.height(36.dp))
                 Box(
                     modifier = Modifier
                         .width(300.dp)
@@ -90,234 +88,51 @@ private fun SuccessDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
-                            /*Button(
-                                onClick = onDismiss,
-                                shape = Shapes.large,
-                                colors = ButtonDefaults.buttonColors(ErrorColor),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(5.dp))
-                            ) {
-                                Text(
-                                    text = "Cancel",
-                                    color = Color.White
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))*/
                             Button(
                                 onClick = onDismiss,
                                 shape = Shapes.large,
-                                colors = ButtonDefaults.buttonColors(SuccessColor),
-                                modifier = Modifier
-                                    //.fillMaxWidth()
-                                    //.weight(1f)
-                                    .clip(RoundedCornerShape(5.dp))
+                                colors = ButtonDefaults.buttonColors(buttonColor),
+                                modifier = Modifier.clip(RoundedCornerShape(5.dp))
                             ) {
-                                Text(
-                                    text = "Ok",
-                                    color = Color.White
-                                )
+                                Text(text = "Ok", color = Color.White)
                             }
                         }
                     }
                 }
             }
-            SuccessHeader(
+            Box(
                 modifier = Modifier
                     .size(72.dp)
                     .align(Alignment.TopCenter)
-                    .border(
-                        border = BorderStroke(width = 5.dp, color = Color.White),
-                        shape = CircleShape
-                    )
-            )
+                    .border(BorderStroke(5.dp, Color.White), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                headerContent()
+            }
         }
     }
 }
 
 @Composable
-private fun ErrorDialog(
-    title: String,
-    description: String,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
-        Box(
-            modifier = Modifier
-                .width(300.dp)
-                .height(400.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .size(300.dp)
-            ) {
-                Spacer(modifier = Modifier.height(36.dp))
-                Box(
-                    modifier = Modifier
-                        .width(300.dp)
-                        .height(164.dp)
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = title.uppercase(),
-                            style = TextStyle(
-                                color = Color.Black,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = description,
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            /*Button(
-                                onClick = onDismiss,
-                                shape = Shapes.large,
-                                colors = ButtonDefaults.buttonColors(ErrorColor),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(5.dp))
-                            ) {
-                                Text(
-                                    text = "Cancel",
-                                    color = Color.White
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))*/
-                            Button(
-                                onClick = onDismiss,
-                                shape = Shapes.large,
-                                colors = ButtonDefaults.buttonColors(ErrorColor),
-                                modifier = Modifier
-                                    //.fillMaxWidth()
-                                    //.weight(1f)
-                                    .clip(RoundedCornerShape(5.dp))
-                            ) {
-                                Text(
-                                    text = "Ok",
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            ErrorHeader(
-                modifier = Modifier
-                    .size(72.dp)
-                    .align(Alignment.TopCenter)
-                    .border(
-                        border = BorderStroke(width = 5.dp, color = Color.White),
-                        shape = CircleShape
-                    )
-            )
-        }
+fun SuccessDialog(title: String, description: String, onDismiss: () -> Unit) {
+    CustomDialog(title, description, onDismiss, SuccessColor) {
+        SuccessHeader(Modifier.fillMaxSize())
     }
 }
 
 @Composable
-private fun InfoDialog(
-    title: String,
-    description: String,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
-        Box(
-            modifier = Modifier
-                .width(300.dp)
-                .height(400.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .size(300.dp)
-            ) {
-                Spacer(modifier = Modifier.height(36.dp))
-                Box(
-                    modifier = Modifier
-                        .width(300.dp)
-                        .height(164.dp)
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = title.uppercase(),
-                            style = TextStyle(
-                                color = Color.Black,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = description,
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = onDismiss,
-                            shape = Shapes.large,
-                            colors = ButtonDefaults.buttonColors(InfoColor),
-                            modifier = Modifier
-                                //.fillMaxWidth()
-                                .align(Alignment.End)
-                                .clip(RoundedCornerShape(5.dp))
-                        ) {
-                            Text(
-                                text = "Ok",
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-            InfoHeader(
-                modifier = Modifier
-                    .size(72.dp)
-                    .align(Alignment.TopCenter)
-                    .border(
-                        border = BorderStroke(width = 5.dp, color = Color.White),
-                        shape = CircleShape
-                    )
-            )
-        }
+fun ErrorDialog(title: String, description: String, onDismiss: () -> Unit) {
+    CustomDialog(title, description, onDismiss, ErrorColor) {
+        ErrorHeader(Modifier.fillMaxSize())
     }
 }
 
+@Composable
+fun InfoDialog(title: String, description: String, onDismiss: () -> Unit) {
+    CustomDialog(title, description, onDismiss, InfoColor) {
+        InfoHeader(Modifier.fillMaxSize())
+    }
+}
 
 @Composable
 fun MessageDialog(

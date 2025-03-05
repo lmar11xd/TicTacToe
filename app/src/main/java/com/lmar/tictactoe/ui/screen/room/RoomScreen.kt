@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.lmar.tictactoe.core.enums.ActionTypeEnum
 import com.lmar.tictactoe.ui.component.CustomAppBar
 import com.lmar.tictactoe.ui.component.CustomTextField
 import com.lmar.tictactoe.ui.component.GlowingCard
@@ -126,11 +127,12 @@ fun RoomScreen(
                                     } else {
                                         viewModel.searchRoomByCode(code) { valid, roomId ->
                                             if (valid) {
+                                                validationMessage = ""
                                                 navController.navigate(
-                                                    ScreenRoutes.GameScreen.route + "?roomId=$roomId&playerType=O"
+                                                    ScreenRoutes.GameScreen.route + "?actionType=${ActionTypeEnum.JOIN.name}&roomId=$roomId"
                                                 )
                                             } else {
-                                                validationMessage = "¡Partida no encontrada!"
+                                                validationMessage = roomId //Si no es válido roomId es un mensaje de error
                                             }
                                         }
                                     }
@@ -179,7 +181,7 @@ fun RoomScreen(
                             onClick = {
                                 viewModel.createNewRoom { roomId ->
                                     navController.navigate(
-                                        ScreenRoutes.GameScreen.route + "?roomId=$roomId&playerType=X"
+                                        ScreenRoutes.GameScreen.route + "?actionType=${ActionTypeEnum.CREATE.name}&roomId=$roomId"
                                     )
                                 }
                             },

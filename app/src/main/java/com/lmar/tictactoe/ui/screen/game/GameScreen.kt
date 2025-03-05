@@ -21,10 +21,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +47,7 @@ import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
 import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +56,7 @@ fun GameScreen(
     viewModel: GameViewModel = viewModel()
 ) {
     val context = LocalContext.current
+
     val soundPlayer = remember { SoundEffectPlayer(context) }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -64,12 +68,30 @@ fun GameScreen(
     val showDialogDraw by viewModel.showDialogDraw.observeAsState()
     val showDialogLoser by viewModel.showDialogLoser.observeAsState()
 
+    val turnMessage by viewModel.turnMessage.observeAsState()
+
     val winCells by viewModel.winCells.observeAsState()
 
-    LaunchedEffect(key1 = true) {
-        viewModel.eventFlow.collectLatest { event ->
-            when(event) {
-                GameViewModel.UiEvent.SoundTap -> soundPlayer.playClick()
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {// Se ejecuta solo una vez
+        coroutineScope.launch {
+            viewModel.eventFlow.collectLatest { event ->
+                when(event) {
+                    GameViewModel.UiEvent.SoundTap -> soundPlayer.playClick()
+                }
+            }
+        }
+
+        playerType?.let {
+            viewModel.onPlayerJoined(it)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            playerType?.let {
+                viewModel.onPlayerExit()
             }
         }
     }
@@ -124,7 +146,7 @@ fun GameScreen(
                         )
 
                         Text(
-                            viewModel.getTurnMessage(),
+                            turnMessage ?: "",
                             color = MaterialTheme.colorScheme.tertiary,
                             fontSize = 12.sp,
                             modifier = Modifier.align(Alignment.End).padding(0.dp)
@@ -134,27 +156,30 @@ fun GameScreen(
                     Spacer(modifier = Modifier.size(10.dp))
 
                     val glowingColorX =
-                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.X.name) {
+                        if (gameState?.currentPlayerType == PlayerTypeEnum.X) {
                             PlayerTypeEnum.X.color
                         } else {
                             MaterialTheme.colorScheme.primary
                         }
 
                     val glowingColorO =
-                        if (gameState?.currentPlayerType?.name == PlayerTypeEnum.O.name) {
+                        if (gameState?.currentPlayerType == PlayerTypeEnum.O) {
                             PlayerTypeEnum.O.color
                         } else {
                             MaterialTheme.colorScheme.primary
                         }
 
+                    val player1Online = gameState?.player1?.playerStatus == PlayerStatusEnum.ONLINE
+                    val player2Online = gameState?.player2?.playerStatus == PlayerStatusEnum.ONLINE
+
                     PlayersInfo(
-                        "Jugador X",
-                        "Jugador O",
+                        "Jugador ${gameState?.player1?.playerType?.name ?: ""}",
+                        "Jugador ${gameState?.player2?.playerType?.name ?: ""}",
                         glowingColorX,
                         glowingColorO,
                         true,
-                        gameState?.player1?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name,
-                        gameState?.player2?.playerStatus!!.name == PlayerStatusEnum.ONLINE.name
+                        player1Online,
+                        player2Online
                     )
 
                     Box(modifier = Modifier.height(16.dp))
