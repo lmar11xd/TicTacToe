@@ -160,7 +160,7 @@ class GameViewModel(
 
         newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGame"
 
-        _turnMessage.value = "Esperando al Jugador 0"
+        _turnMessage.value = "Esperando al otro jugador"
         _winCells.value = emptyList()
         _playerType.value = playerType.name
 
@@ -320,12 +320,15 @@ class GameViewModel(
     }
 
     fun getTurnMessage(gameState: GameState): String {
-        if(gameState.gameStatus == GameStatusEnum.CREATED
-            || gameState.gameStatus == GameStatusEnum.IN_PROGRESS) {
+        if(gameState.gameStatus == GameStatusEnum.CREATED) {
+            return "Esperando al otro jugador"
+        }
+
+        if(gameState.gameStatus == GameStatusEnum.IN_PROGRESS) {
             _turnMessage.value = if(gameState.currentPlayerType.name == _playerType.value) {
-                "es tu turno"
+                "Es tu turno"
             } else {
-                "es turno del Jugador ${gameState.currentPlayerType.name}"
+                "Es turno del Jugador ${gameState.currentPlayerType.name}"
             }
         }
 

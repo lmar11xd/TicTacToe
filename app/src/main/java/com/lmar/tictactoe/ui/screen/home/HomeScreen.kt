@@ -1,12 +1,11 @@
 package com.lmar.tictactoe.ui.screen.home
 
-import android.annotation.SuppressLint
-import android.graphics.drawable.Icon
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,17 +16,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,9 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,6 +67,28 @@ fun HomeScreen(navController: NavController) {
     var showBottomSheet by remember { mutableStateOf(false) }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                title = {
+                    Text("")
+                },
+                actions = {
+                    IconButton(
+                        onClick = {  },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Configuraciones",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(
+                    rememberTopAppBarState()
+                )
+            )
+        },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
@@ -125,7 +155,7 @@ fun HomeScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 20.dp, horizontal = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     ShadowText(
@@ -165,12 +195,26 @@ fun BottomSheetItem(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+            .clickable { onClick() }
     ) {
-        if(icon != null) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .align(Alignment.CenterVertically)
+        ) {
+            if(icon != null) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+            }
+
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.tertiary,
+                fontSize = 18.sp
+            )
         }
-        Text(text = title, color = MaterialTheme.colorScheme.tertiary, fontSize = 18.sp)
     }
 }
 

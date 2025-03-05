@@ -64,6 +64,9 @@ class SingleGameViewModel(
     private val _isBoardDisabled = MutableStateFlow(false)
     val isBoardDisabled: StateFlow<Boolean> = _isBoardDisabled
 
+    private val _turnMessage = MutableLiveData<String>()
+    val turnMessage: MutableLiveData<String> = _turnMessage
+
     val isLoading = MutableLiveData(true)
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
@@ -122,6 +125,7 @@ class SingleGameViewModel(
                 override fun onDataChange(snapshot: DataSnapshot) {
                     snapshot.getValue(GameState::class.java)?.let {
                         _gameState.value = it
+                        getTurnMessage(it)
                         if(it.gameStatus == GameStatusEnum.FINISHED) {
                             endGame(it.winner)
                         }
@@ -158,7 +162,7 @@ class SingleGameViewModel(
         _gameState.value?.let { state ->
             if(state.gameStatus != GameStatusEnum.FINISHED) {
                 if (state.board[row][col].isEmpty()) {
-                    Log.e(TAG, "Movimiento del Jugador X - IA")
+                    Log.e(TAG, "Movimiento del Jugador X")
                     state.board[row][col] = PlayerTypeEnum.X.name
                     ia.recordPlayerMove(row, col) // Guardamos el movimiento del jugador
 
@@ -239,6 +243,34 @@ class SingleGameViewModel(
         _showDialogWinner.value = false
         _showDialogDraw.value = false
         _showDialogLoser.value = false
+    }
+
+    fun getTurnMessage(gameState: GameState): String {
+
+        if(gameState.gameStatus == GameStatusEnum.CREATED
+            || gameState.gameStatus == GameStatusEnum.IN_PROGRESS) {
+            _turnMessage.value = if(gameState.currentPlayerType == PlayerTypeEnum.X) {
+                "¡Es tu turno!"
+            } else {
+                "¡Turno de la Computadora!"
+            }
+        }
+
+        if(gameState.gameStatus == GameStatusEnum.FINISHED) {
+            _turnMessage.value = when (gameState.winner) {
+                "Draw" -> {
+                    "El juego ha terminado en empate"
+                }
+                PlayerTypeEnum.X.name -> {
+                    "¡Felicidades has ganado!"
+                }
+                else -> {
+                    "El juego ha terminado, has perdido"
+                }
+            }
+        }
+
+        return ""
     }
 
 }

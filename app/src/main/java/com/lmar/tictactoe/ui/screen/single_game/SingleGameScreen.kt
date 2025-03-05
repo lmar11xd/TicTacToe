@@ -45,10 +45,8 @@ import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.feature.sounds.SoundEffectPlayer
 import com.lmar.tictactoe.ui.component.Board
 import com.lmar.tictactoe.ui.component.CustomAppBar
-import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.LevelBadge
 import com.lmar.tictactoe.ui.component.PlayersInfo
-import com.lmar.tictactoe.ui.component.ShadowText
 import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
 import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
@@ -73,6 +71,7 @@ fun SingleGameScreen(
 
     val winCells by viewModel.winCells.observeAsState()
     val isBoardDisabled by viewModel.isBoardDisabled.collectAsState()
+    val turnMessage by viewModel.turnMessage.observeAsState()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -131,7 +130,7 @@ fun SingleGameScreen(
                         LevelBadge(gameState?.level ?: GameLevelEnum.EASY)
 
                         Text(
-                            if(gameState?.currentPlayerType == PlayerTypeEnum.X) "¡Es tu turno!" else "¡Turno de la Computadora!",
+                            turnMessage ?: "",
                             color = MaterialTheme.colorScheme.tertiary,
                             fontSize = 12.sp,
                             modifier = Modifier.align(Alignment.CenterHorizontally).padding(0.dp)
