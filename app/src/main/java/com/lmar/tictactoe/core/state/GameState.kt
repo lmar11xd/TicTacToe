@@ -1,6 +1,7 @@
 package com.lmar.tictactoe.core.state
 
 import com.lmar.tictactoe.core.entity.Player
+import com.lmar.tictactoe.core.enums.GameLevelEnum
 import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.GameTypeEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
@@ -10,6 +11,7 @@ data class GameState(
     var roomId: String = "",
     var gameType: GameTypeEnum = GameTypeEnum.SINGLE,
     var gameStatus: GameStatusEnum = GameStatusEnum.CREATED,
+    var level: GameLevelEnum = GameLevelEnum.EASY,
     var player1: Player? = null,
     var player2: Player? = null,
     var board: MutableList<MutableList<String>> = MutableList(3){ MutableList(3) { "" } },

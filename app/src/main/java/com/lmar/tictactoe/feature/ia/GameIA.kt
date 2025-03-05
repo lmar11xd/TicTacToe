@@ -9,14 +9,13 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
 import com.lmar.tictactoe.core.Constants.DATABASE_REFERENCE
 import com.lmar.tictactoe.core.Constants.MEMORY_REFERENCE
+import com.lmar.tictactoe.core.enums.GameLevelEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 
 class GameIA(
     userId: String,
-    private val difficulty: Difficulty
+    private val level: GameLevelEnum
 ) {
-    enum class Difficulty { EASY, MEDIUM, HARD }
-
     companion object {
         private const val TAG = "GameIA"
 
@@ -69,10 +68,10 @@ class GameIA(
     }
 
     fun getNextMove(board: MutableList<MutableList<String>>): Pair<Int, Int> {
-        return when (difficulty) {
-            Difficulty.EASY -> getRandomMove(board)
-            Difficulty.MEDIUM -> getSmartMove(board)
-            Difficulty.HARD -> getAdaptiveMove(board)
+        return when (level) {
+            GameLevelEnum.EASY -> getRandomMove(board)
+            GameLevelEnum.MEDIUM -> getSmartMove(board)
+            GameLevelEnum.HARD -> getAdaptiveMove(board)
         }
     }
 

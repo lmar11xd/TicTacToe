@@ -39,15 +39,18 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.lmar.tictactoe.core.enums.GameLevelEnum
 import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.feature.sounds.SoundEffectPlayer
 import com.lmar.tictactoe.ui.component.Board
 import com.lmar.tictactoe.ui.component.CustomAppBar
+import com.lmar.tictactoe.ui.component.GlowingCard
+import com.lmar.tictactoe.ui.component.LevelBadge
 import com.lmar.tictactoe.ui.component.PlayersInfo
+import com.lmar.tictactoe.ui.component.ShadowText
 import com.lmar.tictactoe.ui.component.message_dialog.DialogTypeEnum
 import com.lmar.tictactoe.ui.component.message_dialog.MessageDialog
-import com.lmar.tictactoe.ui.screen.game.GameViewModel
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -124,6 +127,9 @@ fun SingleGameScreen(
                         verticalArrangement = Arrangement.spacedBy(0.dp),
                         horizontalAlignment = Alignment.End
                     ) {
+
+                        LevelBadge(gameState?.level ?: GameLevelEnum.EASY)
+
                         Text(
                             if(gameState?.currentPlayerType == PlayerTypeEnum.X) "¡Es tu turno!" else "¡Turno de la Computadora!",
                             color = MaterialTheme.colorScheme.tertiary,
@@ -166,7 +172,7 @@ fun SingleGameScreen(
 
                     if(gameState?.gameStatus == GameStatusEnum.FINISHED) {
                         Button(
-                            onClick = { viewModel.createNewGame() },
+                            onClick = { gameState?.level?.let { viewModel.createNewGame(it) } },
                             colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.tertiary),
                             modifier = Modifier.padding(top = 12.dp)
                         ) {

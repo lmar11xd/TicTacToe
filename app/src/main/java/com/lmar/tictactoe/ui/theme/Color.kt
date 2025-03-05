@@ -76,5 +76,6 @@ val surfaceContainerHighestDark = Color(0xFF35343A)
 
 
 val SuccessColor = Color(0xFF02CB6F)
+val DangerColor = Color(0xFFFFC107)
 val ErrorColor = Color(0xFFEE4435)
 val InfoColor = Color(0xFF234F90)

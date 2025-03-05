@@ -17,6 +17,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.lmar.tictactoe.core.enums.ActionTypeEnum
+import com.lmar.tictactoe.core.enums.GameLevelEnum
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
@@ -49,7 +50,15 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(navController)
                         }
 
-                        composable(route = ScreenRoutes.SingleGameScreen.route) {
+                        composable(
+                            route = ScreenRoutes.SingleGameScreen.route + "?level={level}",
+                            arguments = listOf(
+                                navArgument("level") {
+                                    type = NavType.StringType
+                                    defaultValue = GameLevelEnum.EASY.name // Valor por defecto
+                                }
+                            )
+                        ) {
                             SingleGameScreen(navController)
                         }
 
@@ -66,9 +75,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         ){
-                            GameScreen(
-                                navController = navController
-                            )
+                            GameScreen(navController = navController)
                         }
 
                         composable(route = ScreenRoutes.RoomScreen.route) {

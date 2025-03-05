@@ -16,6 +16,7 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
 import com.lmar.tictactoe.core.Constants.BOARDS_REFERENCE
 import com.lmar.tictactoe.core.Constants.DATABASE_REFERENCE
+import com.lmar.tictactoe.core.enums.GameLevelEnum
 import com.lmar.tictactoe.core.enums.GameStatusEnum
 import com.lmar.tictactoe.core.enums.PlayerTypeEnum
 import com.lmar.tictactoe.core.state.GameState
@@ -52,7 +53,7 @@ class SingleGameViewModel(
 
     private val userId = Firebase.auth.currentUser?.uid ?: "default_user"
 
-    private val ia = GameIA(userId, GameIA.Difficulty.EASY)
+    private lateinit var ia: GameIA
 
     private val _gameState = MutableLiveData<GameState>()
     val gameState: LiveData<GameState> = _gameState
@@ -73,15 +74,30 @@ class SingleGameViewModel(
     }
 
     init {
-        createNewGame()
+        savedStateHandle.get<String>("level")?.let { level ->
+
+            //Dificultad del Juego
+            val gameLevel = when(level) {
+                GameLevelEnum.EASY.name -> GameLevelEnum.EASY
+                GameLevelEnum.MEDIUM.name -> GameLevelEnum.MEDIUM
+                GameLevelEnum.HARD.name -> GameLevelEnum.HARD
+                else ->  GameLevelEnum.EASY
+            }
+
+            createNewGame(gameLevel)
+        }
     }
 
-    fun createNewGame() {
+    fun createNewGame(level: GameLevelEnum) {
         isLoading.value = true
         _winCells.value = emptyList()
+
+        ia = GameIA(userId, level)
+
         val gameId = UUID.randomUUID().toString()
         val newGame = GameState(gameId = gameId)
 
+        newGame.level = level
         newGame.modificationUser = "$deviceInfo/$androidVersion/createNewGame"
 
         Log.d(TAG, "Creando Juego: $gameId")
@@ -217,14 +233,6 @@ class SingleGameViewModel(
         gameState.value?.let { gameState ->
             _winCells.value = GameIA.getWinCells(gameState.board, gameState.winner)
         }
-    }
-
-    fun resetAIMemory() {
-        ia.resetMemory()
-    }
-
-    fun getAIMemoryStats(): Map<Pair<Int, Int>, Int> {
-        return ia.getMemoryStats()
     }
 
     fun closeDialogs() {
