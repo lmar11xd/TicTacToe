@@ -61,8 +61,8 @@ fun RoomScreen(
             CustomAppBar(
                 "Multijugador",
                 onBackAction = {
-                navController.popBackStack()
-            },
+                    navController.popBackStack()
+                },
                 state = rememberTopAppBarState()
             )
         },
@@ -122,7 +122,7 @@ fun RoomScreen(
 
                             Button(
                                 onClick = {
-                                    if(code.isEmpty()) {
+                                    if (code.isEmpty()) {
                                         validationMessage = ""
                                     } else {
                                         viewModel.searchRoomByCode(code) { valid, roomId ->
@@ -132,7 +132,8 @@ fun RoomScreen(
                                                     ScreenRoutes.GameScreen.route + "?actionType=${ActionTypeEnum.JOIN.name}&roomId=$roomId"
                                                 )
                                             } else {
-                                                validationMessage = roomId //Si no es válido roomId es un mensaje de error
+                                                validationMessage =
+                                                    roomId //Si no es válido roomId es un mensaje de error
                                             }
                                         }
                                     }

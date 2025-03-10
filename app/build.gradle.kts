@@ -94,6 +94,9 @@ dependencies {
     //Sonidos
     implementation(libs.androidx.media3.common.ktx)
 
+    //Icons
+    implementation(libs.androidx.material.icons.extended)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

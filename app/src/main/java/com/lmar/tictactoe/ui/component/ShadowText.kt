@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -25,6 +24,7 @@ fun ShadowText(
     fontWeight: FontWeight = FontWeight.Bold,
     fontFamily: FontFamily = FontFamily.Default,
     textColor: Color = Color.White,
+    textAlign: TextAlign = TextAlign.Center,
     shadowColor: Color = Color.Black,
     blurRadius: Float = 20f,
     xOffset: Float = 0f,
@@ -32,7 +32,7 @@ fun ShadowText(
 ) {
     Text(
         text = text,
-        textAlign = TextAlign.Center,
+        textAlign = textAlign,
         style = TextStyle(
             fontSize = fontSize,
             fontFamily = fontFamily,
@@ -44,7 +44,7 @@ fun ShadowText(
                 blurRadius = blurRadius // Nivel de desenfoque
             )
         ),
-        modifier = modifier.padding(horizontal = 5.dp)
+        modifier = modifier
     )
 }
 

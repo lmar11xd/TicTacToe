@@ -61,7 +61,9 @@ fun PlayersInfo(
                         text = PlayerTypeEnum.X.name,
                         textColor = Color.White,
                         shadowColor = Color.White,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        modifier = Modifier
+                            .padding(5.dp)
+                            .align(Alignment.CenterHorizontally)
                     )
                     Text(playerNameX, fontSize = 8.sp, color = Color.White, textAlign = TextAlign.Center)
                 }
@@ -96,7 +98,9 @@ fun PlayersInfo(
                 fontSize = 18.sp,
                 textColor = Color.White,
                 shadowColor = Color.White,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier
+                    .padding(5.dp)
+                    .align(Alignment.Center)
             )
         }
 
@@ -123,6 +127,7 @@ fun PlayersInfo(
                         textColor = Color.White,
                         shadowColor = Color.White,
                         modifier = Modifier
+                            .padding(5.dp)
                             .align(Alignment.CenterHorizontally)
                     )
 

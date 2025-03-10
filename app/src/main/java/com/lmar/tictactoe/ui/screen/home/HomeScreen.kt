@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -42,11 +43,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,10 +75,10 @@ fun HomeScreen(navController: NavController) {
                 },
                 actions = {
                     IconButton(
-                        onClick = {  },
+                        onClick = { navController.navigate(ScreenRoutes.ProfileScreen.route) },
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Default.AccountCircle,
                             contentDescription = "Configuraciones",
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -100,7 +100,7 @@ fun HomeScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ShadowText(
-                text = "Tres en Raya",
+                text = stringResource(R.string.app_name),
                 fontFamily = MaterialTheme.typography.displayLarge.fontFamily!!,
                 fontSize = 32.sp,
                 textColor = MaterialTheme.colorScheme.primary,

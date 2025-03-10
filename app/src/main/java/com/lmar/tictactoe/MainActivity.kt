@@ -21,7 +21,10 @@ import com.lmar.tictactoe.core.enums.GameLevelEnum
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.screen.game.GameScreen
 import com.lmar.tictactoe.ui.screen.home.HomeScreen
+import com.lmar.tictactoe.ui.screen.login.LoginScreen
+import com.lmar.tictactoe.ui.screen.profile.ProfileScreen
 import com.lmar.tictactoe.ui.screen.room.RoomScreen
+import com.lmar.tictactoe.ui.screen.signup.SignUpScreen
 import com.lmar.tictactoe.ui.screen.single_game.SingleGameScreen
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 
@@ -80,6 +83,18 @@ class MainActivity : ComponentActivity() {
 
                         composable(route = ScreenRoutes.RoomScreen.route) {
                             RoomScreen(navController)
+                        }
+
+                        composable(route = ScreenRoutes.ProfileScreen.route) {
+                            ProfileScreen(navController)
+                        }
+
+                        composable(route = ScreenRoutes.LoginScreen.route) {
+                            LoginScreen(navController)
+                        }
+
+                        composable(route = ScreenRoutes.SignUpScreen.route) {
+                            SignUpScreen(navController)
                         }
                     }
                 }

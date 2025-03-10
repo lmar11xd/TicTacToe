@@ -105,7 +105,7 @@ fun Cell(
                 else
                     PlayerTypeEnum.O.color,
                 shadowColor = Color.White,
-                modifier = Modifier.animateContentSize()
+                modifier = Modifier.padding(5.dp).animateContentSize()
             )
         }
     }
