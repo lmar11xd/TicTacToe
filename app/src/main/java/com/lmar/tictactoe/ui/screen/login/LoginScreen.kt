@@ -1,5 +1,6 @@
 package com.lmar.tictactoe.ui.screen.login
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,29 +23,64 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.lmar.tictactoe.ui.component.CustomAppBar
 import com.lmar.tictactoe.ui.component.DividerTextComponent
 import com.lmar.tictactoe.ui.component.FormPasswordTextField
 import com.lmar.tictactoe.ui.component.FormTextField
+import com.lmar.tictactoe.ui.component.LoadingComponent
 import com.lmar.tictactoe.ui.component.NormalTextComponent
 import com.lmar.tictactoe.ui.component.ShadowText
+import com.lmar.tictactoe.ui.screen.AuthState
+import com.lmar.tictactoe.ui.screen.AuthViewModel
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val authState = authViewModel.authState.observeAsState()
+
+    val context = LocalContext.current
+
+    var email by remember {
+        mutableStateOf("")
+    }
+
+    var password by remember {
+        mutableStateOf("")
+    }
+
+    LaunchedEffect(authState.value) {
+        when(authState.value) {
+            AuthState.Authenticated -> navController.navigate(ScreenRoutes.HomeScreen.route)
+            is AuthState.Error -> {
+                Toast.makeText(context, (authState.value as AuthState.Error).message, Toast.LENGTH_SHORT).show()
+            }
+            else -> Unit
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -93,14 +129,27 @@ fun LoginScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                FormTextField("Correo", Icons.Default.Email)
+                FormTextField(
+                    value = email,
+                    label = "Correo",
+                    icon = Icons.Default.Email,
+                    onValueChange = { email = it }
+                )
+
                 Spacer(modifier = Modifier.height(8.dp))
-                FormPasswordTextField("Contraseña", Icons.Default.Lock)
+
+                FormPasswordTextField(
+                    value = password,
+                    label = "Contraseña",
+                    icon = Icons.Default.Lock,
+                    onValueChange = { password = it }
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = {},
+                    onClick = { authViewModel.login(email, password) },
+                    enabled = authState.value != AuthState.Loading,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Iniciar Sesión")
@@ -138,6 +187,10 @@ fun LoginScreen(navController: NavController) {
                         }
                 )
             }
+        }
+
+        if(authState.value == AuthState.Loading) {
+            LoadingComponent()
         }
     }
 }

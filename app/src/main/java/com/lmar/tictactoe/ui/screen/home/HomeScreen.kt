@@ -37,6 +37,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,21 +51,30 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.lmar.tictactoe.R
 import com.lmar.tictactoe.core.enums.GameLevelEnum
+import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.ShadowText
+import com.lmar.tictactoe.ui.screen.AuthState
+import com.lmar.tictactoe.ui.screen.AuthViewModel
 import com.lmar.tictactoe.ui.screen.ScreenRoutes
 import com.lmar.tictactoe.ui.theme.TicTacToeTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
     val snackbarHostState = remember { SnackbarHostState() }
 
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    val authState = authViewModel.authState.observeAsState()
 
     Scaffold(
         topBar = {
@@ -109,15 +119,24 @@ fun HomeScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Image(
-                painter = painterResource(R.drawable.tictactoe),
-                contentDescription = "Logo",
-                contentScale = ContentScale.Crop,
+            GlowingCard(
                 modifier = Modifier
                     .size(100.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-            )
+                    .padding(5.dp),
+                glowingColor = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primary,
+                cornerRadius = Int.MAX_VALUE.dp
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.tictactoe),
+                    contentDescription = "Logo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .border(5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -133,22 +152,24 @@ fun HomeScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.size(4.dp))
 
-            Button(
-                onClick = {
-                    navController.navigate(ScreenRoutes.RoomScreen.route)
-                },
-                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
-                modifier = Modifier.width(200.dp)
-            ) {
-                Text("Multijugador")
-            }
+            if (authState.value == AuthState.Authenticated) {
+                Button(
+                    onClick = {
+                        navController.navigate(ScreenRoutes.RoomScreen.route)
+                    },
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.width(200.dp)
+                ) {
+                    Text("Multijugador")
+                }
 
-            Spacer(modifier = Modifier.size(4.dp))
+                Spacer(modifier = Modifier.size(4.dp))
+            }
         }
 
-        if(showBottomSheet) {
+        if (showBottomSheet) {
             ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false},
+                onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState
             ) {
                 Column(
@@ -196,7 +217,10 @@ fun BottomSheetItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(8.dp)
+            )
             .clickable { onClick() }
     ) {
         Box(
@@ -205,7 +229,7 @@ fun BottomSheetItem(
                 .padding(horizontal = 20.dp, vertical = 8.dp)
                 .align(Alignment.CenterVertically)
         ) {
-            if(icon != null) {
+            if (icon != null) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
             }
 

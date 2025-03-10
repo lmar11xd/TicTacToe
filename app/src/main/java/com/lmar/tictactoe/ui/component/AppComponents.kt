@@ -43,13 +43,13 @@ import com.lmar.tictactoe.ui.theme.Shapes
 fun NormalTextComponent(
     value: String,
     modifier: Modifier = Modifier,
-    fontSize: TextUnit = 20.sp,
+    fontSize: TextUnit = 14.sp,
     textColor: Color = MaterialTheme.colorScheme.tertiary,
     textAlign: TextAlign = TextAlign.Center
 ) {
     Text(
         text = value,
-        modifier = modifier.fillMaxWidth().heightIn(min = 30.dp),
+        modifier = modifier.fillMaxWidth().heightIn(),
         style = TextStyle(
             fontSize = fontSize,
             fontWeight = FontWeight.Normal,
@@ -64,6 +64,7 @@ fun NormalTextComponent(
 fun HeadingTextComponent(
     value: String,
     modifier: Modifier = Modifier,
+    fontSize: TextUnit = 18.sp,
     textColor: Color = MaterialTheme.colorScheme.primary,
     textAlign: TextAlign = TextAlign.Center
 ) {
@@ -71,7 +72,7 @@ fun HeadingTextComponent(
         text = value,
         modifier = modifier.fillMaxWidth().heightIn(),
         style = TextStyle(
-            fontSize = 30.sp,
+            fontSize = fontSize,
             fontWeight = FontWeight.Bold,
             fontStyle = FontStyle.Normal,
             textAlign = textAlign
@@ -81,14 +82,16 @@ fun HeadingTextComponent(
 }
 
 @Composable
-fun FormTextField(labelValue: String, icon: ImageVector) {
-    val textValue = remember {
-        mutableStateOf("")
-    }
-
+fun FormTextField(
+    modifier: Modifier = Modifier,
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector
+) {
     OutlinedTextField(
-        value = textValue.value,
-        modifier = Modifier
+        value = value,
+        modifier = modifier
             .fillMaxWidth()
             .clip(Shapes.small)
             .padding(start = 4.dp, end = 4.dp),
@@ -98,11 +101,9 @@ fun FormTextField(labelValue: String, icon: ImageVector) {
             cursorColor = MaterialTheme.colorScheme.primary,
             focusedContainerColor = MaterialTheme.colorScheme.primary
         ),
-        label = { Text(labelValue) },
+        label = { Text(label) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        onValueChange = {
-            textValue.value = it
-        },
+        onValueChange = onValueChange,
         leadingIcon = {
             Icon(imageVector = icon, contentDescription = "IconForm")
         },
@@ -112,20 +113,22 @@ fun FormTextField(labelValue: String, icon: ImageVector) {
 }
 
 @Composable
-fun FormPasswordTextField(labelValue: String, icon: ImageVector) {
+fun FormPasswordTextField(
+    modifier: Modifier = Modifier,
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector
+) {
     val localFocusManager = LocalFocusManager.current
-
-    val password = remember {
-        mutableStateOf("")
-    }
 
     val passVisible = remember { 
         mutableStateOf(false)
     }
 
     OutlinedTextField(
-        value = password.value,
-        modifier = Modifier
+        value = value,
+        modifier = modifier
             .fillMaxWidth()
             .clip(Shapes.small)
             .padding(start = 4.dp, end = 4.dp),
@@ -135,14 +138,12 @@ fun FormPasswordTextField(labelValue: String, icon: ImageVector) {
             cursorColor = MaterialTheme.colorScheme.primary,
             focusedContainerColor = MaterialTheme.colorScheme.primary
         ),
-        label = { Text(labelValue) },
+        label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions {
             localFocusManager.clearFocus()
         },
-        onValueChange = {
-            password.value = it
-        },
+        onValueChange = onValueChange,
         leadingIcon = {
             Icon(imageVector = icon, contentDescription = "IconForm")
         },

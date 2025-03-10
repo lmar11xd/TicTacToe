@@ -12,10 +12,6 @@ class Player {
 
     constructor()
 
-    constructor(playerType: PlayerTypeEnum) {
-        this.playerType = playerType
-    }
-
     constructor(playerType: PlayerTypeEnum, playerStatus: PlayerStatusEnum) {
         this.playerType = playerType
         this.playerStatus = playerStatus

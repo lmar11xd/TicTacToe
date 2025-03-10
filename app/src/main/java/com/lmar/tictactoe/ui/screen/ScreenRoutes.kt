@@ -8,4 +8,5 @@ sealed class ScreenRoutes(val route: String) {
     data object ProfileScreen: ScreenRoutes("profile_screen")
     data object LoginScreen: ScreenRoutes("login_screen")
     data object SignUpScreen: ScreenRoutes("signup_screen")
+    data object EditUserScreen: ScreenRoutes("edituser_screen")
 }
