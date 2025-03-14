@@ -1,5 +1,8 @@
 package com.lmar.tictactoe.ui.screen.profile
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,12 +13,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,7 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -44,11 +52,15 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.lmar.tictactoe.R
+import com.lmar.tictactoe.core.Constants.PHOTO_SIZE
 import com.lmar.tictactoe.ui.component.CustomAppBar
+import com.lmar.tictactoe.ui.component.FormTextField
 import com.lmar.tictactoe.ui.component.GlowingCard
 import com.lmar.tictactoe.ui.component.HeadingTextComponent
 import com.lmar.tictactoe.ui.component.ImageCircle
+import com.lmar.tictactoe.ui.component.LoadingComponent
 import com.lmar.tictactoe.ui.component.NormalTextComponent
 import com.lmar.tictactoe.ui.screen.AuthState
 import com.lmar.tictactoe.ui.screen.AuthViewModel
@@ -64,13 +76,18 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val authState = authViewModel.authState.observeAsState()
-    val user = profileViewModel.user.observeAsState()
+    val userState = profileViewModel.userState.observeAsState()
 
-    LaunchedEffect(authState.value) {
-        when(authState.value) {
-            AuthState.Unauthenticated -> navController.navigate(ScreenRoutes.HomeScreen)
-            else -> Unit
-        }
+    val showForm by profileViewModel.showForm.observeAsState()
+
+    val isLoading by profileViewModel.isLoading.observeAsState()
+
+    val profileImageUri by profileViewModel.profileImageUri.observeAsState()
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        profileViewModel.setProfileImage(uri)
     }
 
     Scaffold(
@@ -106,18 +123,54 @@ fun ProfileScreen(
                 ) {
                     if (authState.value == AuthState.Authenticated) {
                         //Información del Usuario
-                        GlowingCard(
-                            modifier = Modifier
-                                .size(150.dp)
-                                .padding(5.dp),
-                            glowingColor = MaterialTheme.colorScheme.tertiary,
-                            containerColor = MaterialTheme.colorScheme.tertiary,
-                            cornerRadius = Int.MAX_VALUE.dp
-                        ) {
-                            ImageCircle(
-                                "https://images.freeimages.com/365/images/istock/previews/1009/100996291-male-avatar-profile-picture-vector.jpg",
-                                modifier = Modifier.size(150.dp)
-                            )
+                        Box(modifier = Modifier.size(PHOTO_SIZE)) {
+                            GlowingCard(
+                                modifier = Modifier
+                                    .size(PHOTO_SIZE)
+                                    .padding(5.dp),
+                                glowingColor = MaterialTheme.colorScheme.tertiary,
+                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                cornerRadius = Int.MAX_VALUE.dp
+                            ) {
+                                if(profileImageUri == null) {
+                                    userState.value?.imageUrl?.let { imageUrl ->
+                                        if(imageUrl.isEmpty()) {
+                                            ImageCircle(
+                                                painter = painterResource(R.drawable.default_avatar),
+                                                modifier = Modifier.size(PHOTO_SIZE)
+                                            )
+                                        } else {
+                                            ImageCircle(
+                                                imageUrl = imageUrl,
+                                                modifier = Modifier.size(PHOTO_SIZE)
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    ImageCircle(
+                                        painter = rememberAsyncImagePainter(profileImageUri),
+                                        modifier = Modifier.size(PHOTO_SIZE)
+                                    )
+                                }
+                            }
+
+                            if (showForm == true) {
+                                IconButton(
+                                    onClick = { launcher.launch("image/*") },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.tertiary)
+                                        .align(Alignment.CenterEnd)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Camara",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.size(8.dp))
@@ -131,37 +184,68 @@ fun ProfileScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 HeadingTextComponent(
-                                    value = user.value?.names ?: "",
+                                    value = userState.value?.names ?: "",
                                     textColor = MaterialTheme.colorScheme.primary,
                                     fontSize = 16.sp
                                 )
 
                                 NormalTextComponent(
-                                    value = user.value?.email ?: "",
+                                    value = userState.value?.email ?: "",
                                     fontSize = 14.sp
                                 )
                             }
 
-                            IconButton(
-                                onClick = { navController.navigate(ScreenRoutes.EditUserScreen.route) },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                            if (showForm == false) {
+                                IconButton(
+                                    onClick = { profileViewModel.showForm() },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = { profileViewModel.dismissForm() },
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.tertiary)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Edit",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (showForm == true) {
+                            //Formulario
+                            FormTextField(
+                                value = userState.value?.names ?: "",
+                                label = "Nombres",
+                                icon = Icons.Default.Person,
+                                onValueChange = {
+                                    profileViewModel.changeName(it)
+                                }
+                            )
                         }
                     } else if (authState.value == AuthState.Unauthenticated) {
                         //Default
                         GlowingCard(
                             modifier = Modifier
-                                .size(150.dp)
+                                .size(PHOTO_SIZE)
                                 .padding(5.dp),
                             glowingColor = MaterialTheme.colorScheme.tertiary,
                             containerColor = MaterialTheme.colorScheme.tertiary,
@@ -172,11 +256,18 @@ fun ProfileScreen(
                                 contentDescription = "Logo",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(150.dp)
+                                    .size(PHOTO_SIZE)
                                     .clip(CircleShape)
                                     .border(5.dp, MaterialTheme.colorScheme.tertiary, CircleShape),
                             )
                         }
+
+                        Spacer(modifier = Modifier.size(8.dp))
+
+                        NormalTextComponent(
+                            "¡Inicia sesión y juega en línea con tus amigos!",
+                            fontSize = 14.sp
+                        )
                     }
                 }
 
@@ -189,6 +280,19 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Bottom
                 ) {
+                    if (showForm == true) {
+                        Spacer(modifier = Modifier.size(4.dp))
+
+                        Button(
+                            onClick = {
+                                profileViewModel.saveForm()
+                            },
+                            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.width(200.dp)
+                        ) {
+                            Text("Guardar")
+                        }
+                    }
 
                     Spacer(modifier = Modifier.size(4.dp))
 
@@ -225,6 +329,10 @@ fun ProfileScreen(
                 }
 
                 Spacer(modifier = Modifier.size(4.dp))
+            }
+
+            if (isLoading == true) {
+                LoadingComponent()
             }
         }
     }

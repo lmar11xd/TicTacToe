@@ -81,6 +81,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
     implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.storage.ktx)
 
     //Gestion de estados
     implementation(libs.androidx.runtime.livedata)

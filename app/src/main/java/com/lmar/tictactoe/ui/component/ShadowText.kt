@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -44,7 +45,7 @@ fun ShadowText(
                 blurRadius = blurRadius // Nivel de desenfoque
             )
         ),
-        modifier = modifier
+        modifier = modifier.padding(5.dp)
     )
 }
 

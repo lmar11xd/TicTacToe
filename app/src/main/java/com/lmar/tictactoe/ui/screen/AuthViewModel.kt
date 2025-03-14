@@ -10,9 +10,9 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.database
 import com.lmar.tictactoe.core.Constants.DATABASE_REFERENCE
 import com.lmar.tictactoe.core.Constants.USERS_REFERENCE
-import com.lmar.tictactoe.core.entity.User
+import com.lmar.tictactoe.core.state.UserState
 
-class AuthViewModel(): ViewModel() {
+class AuthViewModel : ViewModel() {
 
     companion object {
         private const val TAG = "AuthViewModel"
@@ -58,19 +58,29 @@ class AuthViewModel(): ViewModel() {
             }
     }
 
-    fun signup(names: String, email: String, password: String) {
+    fun signup(names: String, email: String, password: String, passwordRepeat: String) {
         if(names.isEmpty()) {
             _authState.value = AuthState.Error("¡Nombres no puede ser vacío!")
             return
         }
 
         if(email.isEmpty()) {
-            _authState.value = AuthState.Error("¡Ccontraseña no puede ser vacía!")
+            _authState.value = AuthState.Error("¡Correo no puede ser vacío!")
             return
         }
 
         if(password.isEmpty()) {
-            _authState.value = AuthState.Error("¡Correo no puede ser vacío!")
+            _authState.value = AuthState.Error("¡Contraseña no puede ser vacía!")
+            return
+        }
+
+        if(password.length < 6) {
+            _authState.value = AuthState.Error("¡Contraseña debe tener al menos 6 caracteres!")
+            return
+        }
+
+        if(passwordRepeat.isEmpty() || password != passwordRepeat) {
+            _authState.value = AuthState.Error("¡Las contraseñas no coinciden!")
             return
         }
 
@@ -80,7 +90,8 @@ class AuthViewModel(): ViewModel() {
                 if(task.isSuccessful) {
                     _authState.value = AuthState.Authenticated
 
-                    val newUser = User()
+                    //Registrar Usuario
+                    val newUser = UserState()
                     newUser.id = task.result.user?.uid.toString()
                     newUser.names = names
                     newUser.email = email
@@ -99,7 +110,7 @@ class AuthViewModel(): ViewModel() {
         _authState.value = AuthState.Unauthenticated
     }
 
-    private fun createUser(user: User) {
+    private fun createUser(user: UserState) {
         database.child(user.id)
             .setValue(user)
             .addOnSuccessListener {
@@ -109,6 +120,7 @@ class AuthViewModel(): ViewModel() {
                 Log.e(TAG, "Error al registrar usuario ${user.id}", e)
             }
     }
+
 }
 
 sealed class AuthState {

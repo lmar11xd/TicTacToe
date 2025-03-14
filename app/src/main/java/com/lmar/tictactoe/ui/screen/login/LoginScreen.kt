@@ -119,15 +119,16 @@ fun LoginScreen(
                         textColor = MaterialTheme.colorScheme.primary,
                         shadowColor = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+
                     NormalTextComponent(
                         "¡Inicia sesión para continuar!",
                         textAlign = TextAlign.Start,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(horizontal = 5.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 FormTextField(
                     value = email,

@@ -79,6 +79,10 @@ fun SignUpScreen(
         mutableStateOf("")
     }
 
+    var passwordRepeat by remember {
+        mutableStateOf("")
+    }
+
     LaunchedEffect(authState.value) {
         when(authState.value) {
             AuthState.Authenticated -> navController.navigate(ScreenRoutes.HomeScreen.route)
@@ -126,15 +130,16 @@ fun SignUpScreen(
                         textColor = MaterialTheme.colorScheme.primary,
                         shadowColor = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+
                     NormalTextComponent(
                         "¡Regístrate para comenzar!",
                         textAlign = TextAlign.Start,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(horizontal = 5.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 FormTextField(
                     value = names,
@@ -168,13 +173,24 @@ fun SignUpScreen(
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
+
+                FormPasswordTextField(
+                    value = passwordRepeat,
+                    label = "Contraseña",
+                    icon = Icons.Default.Lock,
+                    onValueChange = {
+                        passwordRepeat = it
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
                 FormCheckbox(value = stringResource(R.string.terms_and_conditions))
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
-                        authViewModel.signup(names, email, password)
+                        authViewModel.signup(names, email, password, passwordRepeat)
                     },
                     enabled = authState.value != AuthState.Loading,
                     modifier = Modifier.fillMaxWidth()
