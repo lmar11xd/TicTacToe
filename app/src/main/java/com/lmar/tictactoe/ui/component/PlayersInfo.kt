@@ -62,7 +62,6 @@ fun PlayersInfo(
                         textColor = Color.White,
                         shadowColor = Color.White,
                         modifier = Modifier
-                            .padding(5.dp)
                             .align(Alignment.CenterHorizontally)
                     )
                     Text(playerNameX, fontSize = 8.sp, color = Color.White, textAlign = TextAlign.Center)
@@ -99,7 +98,6 @@ fun PlayersInfo(
                 textColor = Color.White,
                 shadowColor = Color.White,
                 modifier = Modifier
-                    .padding(5.dp)
                     .align(Alignment.Center)
             )
         }
@@ -127,7 +125,6 @@ fun PlayersInfo(
                         textColor = Color.White,
                         shadowColor = Color.White,
                         modifier = Modifier
-                            .padding(5.dp)
                             .align(Alignment.CenterHorizontally)
                     )
 
